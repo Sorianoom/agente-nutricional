@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Panel de evolucion{% endblock %}
+{% block content %}
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --series-3: #199e70;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --muted: #898781;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+  }
+  .viz-root {
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 1.5rem;
+  }
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+  .chart-card {
+    background: var(--surface-1);
+    border: 1px solid rgba(11, 11, 11, 0.10);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  .chart-card h2 {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin: 0 0 0.75rem;
+  }
+</style>
+<div class="viz-root">
+  <h1>Evolucion</h1>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>Peso (kg)</h2>
+      <canvas id="chart-weight"></canvas>
+    </div>
+    <div class="chart-card">
+      <h2>Grasa corporal (%)</h2>
+      <canvas id="chart-bodyfat"></canvas>
+    </div>
+    <div class="chart-card">
+      <h2>Macros por version de dieta (g)</h2>
+      <canvas id="chart-macros"></canvas>
+    </div>
+    <div class="chart-card">
+      <h2>Calorias por version de dieta (kcal)</h2>
+      <canvas id="chart-kcal"></canvas>
+    </div>
+  </div>
+</div>
+<script>
+  const bodyMetrics = {{ body_metrics_json | safe }};
+  const dietMacros = {{ diet_macros_json | safe }};
+  const root = document.querySelector(".viz-root");
+  const style = getComputedStyle(root);
+  const series1 = style.getPropertyValue("--series-1").trim();
+  const series2 = style.getPropertyValue("--series-2").trim();
+  const series3 = style.getPropertyValue("--series-3").trim();
+  const gridColor = style.getPropertyValue("--muted").trim();
+
+  new Chart(document.getElementById("chart-weight"), {
+    type: "line",
+    data: {
+      labels: bodyMetrics.map((m) => m.date),
+      datasets: [
+        {
+          label: "Peso (kg)",
+          data: bodyMetrics.map((m) => m.weight_kg),
+          borderColor: series1,
+          backgroundColor: series1,
+          borderWidth: 2,
+          pointRadius: 4,
+          tension: 0.2,
+        },
+      ],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { color: "transparent" } }, y: { grid: { color: gridColor } } },
+    },
+  });
+
+  new Chart(document.getElementById("chart-bodyfat"), {
+    type: "line",
+    data: {
+      labels: bodyMetrics.map((m) => m.date),
+      datasets: [
+        {
+          label: "Grasa corporal (%)",
+          data: bodyMetrics.map((m) => m.body_fat_pct),
+          borderColor: series2,
+          backgroundColor: series2,
+          borderWidth: 2,
+          pointRadius: 4,
+          tension: 0.2,
+        },
+      ],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { color: "transparent" } }, y: { grid: { color: gridColor } } },
+    },
+  });
+
+  new Chart(document.getElementById("chart-macros"), {
+    type: "bar",
+    data: {
+      labels: dietMacros.map((d) => d.valid_from),
+      datasets: [
+        { label: "Proteina (g)", data: dietMacros.map((d) => d.protein_g), backgroundColor: series1, borderRadius: 4 },
+        { label: "Carbohidratos (g)", data: dietMacros.map((d) => d.carbs_g), backgroundColor: series2, borderRadius: 4 },
+        { label: "Grasa (g)", data: dietMacros.map((d) => d.fat_g), backgroundColor: series3, borderRadius: 4 },
+      ],
+    },
+    options: {
+      plugins: { legend: { display: true } },
+      scales: { x: { grid: { color: "transparent" } }, y: { grid: { color: gridColor } } },
+    },
+  });
+
+  new Chart(document.getElementById("chart-kcal"), {
+    type: "bar",
+    data: {
+      labels: dietMacros.map((d) => d.valid_from),
+      datasets: [
+        { label: "Kcal", data: dietMacros.map((d) => d.kcal), backgroundColor: series1, borderRadius: 4 },
+      ],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { color: "transparent" } }, y: { grid: { color: gridColor } } },
+    },
+  });
+</script>
+{% endblock %}
