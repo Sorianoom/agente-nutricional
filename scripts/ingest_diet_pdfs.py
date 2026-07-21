@@ -90,21 +90,23 @@ def save_diet(pdf_filename: str, data: dict) -> int:
                 (pdf_filename, data["valid_from"], data["valid_to"]),
             )
             diet_version_id = cur.fetchone()[0]
-            for meal in data["meals"]:
-                cur.execute(
-                    """
-                    INSERT INTO diet_meals
-                        (diet_version_id, day_label, meal_name, food_item, quantity_grams)
-                    VALUES (%s, %s, %s, %s, %s)
-                    """,
+            cur.executemany(
+                """
+                INSERT INTO diet_meals
+                    (diet_version_id, day_label, meal_name, food_item, quantity_grams)
+                VALUES (%s, %s, %s, %s, %s)
+                """,
+                [
                     (
                         diet_version_id,
                         meal["day_label"],
                         meal["meal_name"],
                         meal["food_item"],
                         meal["quantity_grams"],
-                    ),
-                )
+                    )
+                    for meal in data["meals"]
+                ],
+            )
     return diet_version_id
 
 
