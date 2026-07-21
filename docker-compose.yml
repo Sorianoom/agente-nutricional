@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: nutricion
+      POSTGRES_USER: nutricion
+      POSTGRES_PASSWORD: nutricion
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+  app:
+    build: .
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: nutricion
+      POSTGRES_USER: nutricion
+      POSTGRES_PASSWORD: nutricion
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
