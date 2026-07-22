@@ -1,14 +1,18 @@
-import base64
-import json
 import sys
+import tempfile
 from pathlib import Path
 
-import anthropic
+import anyio
+from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, query
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.db import get_connection  # noqa: E402
 
 PDF_DIR = Path(__file__).resolve().parent.parent / "pdfs" / "dietas"
+
+# cwd fuera del proyecto: evita heredar hooks/skills de Claude Code de este
+# repo, que si no multiplican por ~9x los tokens de cada llamada.
+AGENT_CWD = Path(tempfile.gettempdir()) / "agentenutricional_pdf_extraction"
 
 DIET_SCHEMA = {
     "type": "object",
@@ -42,40 +46,38 @@ DIET_SCHEMA = {
 }
 
 
-def extract_diet(client: anthropic.Anthropic, pdf_path: Path) -> dict:
-    pdf_b64 = base64.standard_b64encode(pdf_path.read_bytes()).decode("utf-8")
-    response = client.messages.create(
-        model="claude-opus-4-8",
-        max_tokens=8000,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "document",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "application/pdf",
-                            "data": pdf_b64,
-                        },
-                    },
-                    {
-                        "type": "text",
-                        "text": (
-                            "Extrae de este PDF de dieta todas las comidas "
-                            "con su cantidad en gramos, agrupadas por dia, "
-                            "y el rango de fechas de validez de la dieta. "
-                            "Si no se indica fecha de fin, deja valid_to "
-                            "como null."
-                        ),
-                    },
-                ],
-            }
-        ],
-        output_config={"format": {"type": "json_schema", "schema": DIET_SCHEMA}},
+def extract_diet(pdf_path: Path) -> dict:
+    AGENT_CWD.mkdir(parents=True, exist_ok=True)
+    options = ClaudeAgentOptions(
+        system_prompt=(
+            "Eres un extractor de datos. Lee el PDF en la ruta indicada con "
+            "la herramienta Read y devuelve solo los datos pedidos segun el "
+            "schema."
+        ),
+        max_turns=5,
+        cwd=str(AGENT_CWD),
+        setting_sources=[],
+        allowed_tools=["Read"],
+        output_format={"type": "json_schema", "schema": DIET_SCHEMA},
     )
-    text = next(block.text for block in response.content if block.type == "text")
-    return json.loads(text)
+    prompt = (
+        f"Lee el PDF en '{pdf_path}' y extrae todas las comidas con su "
+        "cantidad en gramos, agrupadas por dia, y el rango de fechas de "
+        "validez de la dieta. Si no se indica fecha de fin, deja valid_to "
+        "como null."
+    )
+
+    async def _run() -> dict:
+        async for message in query(prompt=prompt, options=options):
+            if isinstance(message, ResultMessage):
+                if message.is_error or message.structured_output is None:
+                    raise RuntimeError(
+                        f"Extraccion fallida para {pdf_path}: {message.result}"
+                    )
+                return message.structured_output
+        raise RuntimeError(f"Sin respuesta del agente para {pdf_path}")
+
+    return anyio.run(_run)
 
 
 def save_diet(pdf_filename: str, data: dict) -> int:
@@ -111,10 +113,9 @@ def save_diet(pdf_filename: str, data: dict) -> int:
 
 
 if __name__ == "__main__":
-    client = anthropic.Anthropic()
     for pdf_path in sorted(PDF_DIR.glob("*.pdf")):
         try:
-            diet_data = extract_diet(client, pdf_path)
+            diet_data = extract_diet(pdf_path)
             version_id = save_diet(pdf_path.name, diet_data)
             print(
                 f"{pdf_path.name}: version {version_id}, "

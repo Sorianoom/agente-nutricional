@@ -17,7 +17,6 @@ services:
       POSTGRES_DB: nutricion
       POSTGRES_USER: nutricion
       POSTGRES_PASSWORD: nutricion
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     ports:
       - "8000:8000"
     depends_on:

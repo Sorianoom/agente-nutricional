@@ -1,11 +1,12 @@
 import json
-from unittest.mock import MagicMock
+
+from claude_agent_sdk import ResultMessage
 
 from app.db import get_connection
 from scripts.ingest_body_metrics_pdfs import extract_body_metrics, save_body_metrics
 
 
-def test_extract_body_metrics_parses_json_response(tmp_path):
+def test_extract_body_metrics_parses_structured_output(tmp_path, monkeypatch):
     fake_pdf = tmp_path / "fake.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 fake content")
 
@@ -15,16 +16,23 @@ def test_extract_body_metrics_parses_json_response(tmp_path):
         "body_fat_pct": 18.2,
         "muscle_mass_kg": 35.0,
     }
-    text_block = MagicMock()
-    text_block.type = "text"
-    text_block.text = json.dumps(expected)
-    fake_response = MagicMock()
-    fake_response.content = [text_block]
+    fake_result = ResultMessage(
+        subtype="success",
+        duration_ms=100,
+        duration_api_ms=90,
+        is_error=False,
+        num_turns=1,
+        session_id="test-session",
+        structured_output=expected,
+        result=json.dumps(expected),
+    )
 
-    fake_client = MagicMock()
-    fake_client.messages.create.return_value = fake_response
+    async def fake_query(prompt, options):
+        yield fake_result
 
-    result = extract_body_metrics(fake_client, fake_pdf)
+    monkeypatch.setattr("scripts.ingest_body_metrics_pdfs.query", fake_query)
+
+    result = extract_body_metrics(fake_pdf)
     assert result == expected
 
 

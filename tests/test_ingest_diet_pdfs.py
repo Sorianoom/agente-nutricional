@@ -1,11 +1,12 @@
 import json
-from unittest.mock import MagicMock
+
+from claude_agent_sdk import ResultMessage
 
 from app.db import get_connection
 from scripts.ingest_diet_pdfs import extract_diet, save_diet
 
 
-def test_extract_diet_parses_json_response(tmp_path):
+def test_extract_diet_parses_structured_output(tmp_path, monkeypatch):
     fake_pdf = tmp_path / "fake.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 fake content")
 
@@ -21,16 +22,23 @@ def test_extract_diet_parses_json_response(tmp_path):
             }
         ],
     }
-    text_block = MagicMock()
-    text_block.type = "text"
-    text_block.text = json.dumps(expected)
-    fake_response = MagicMock()
-    fake_response.content = [text_block]
+    fake_result = ResultMessage(
+        subtype="success",
+        duration_ms=100,
+        duration_api_ms=90,
+        is_error=False,
+        num_turns=1,
+        session_id="test-session",
+        structured_output=expected,
+        result=json.dumps(expected),
+    )
 
-    fake_client = MagicMock()
-    fake_client.messages.create.return_value = fake_response
+    async def fake_query(prompt, options):
+        yield fake_result
 
-    result = extract_diet(fake_client, fake_pdf)
+    monkeypatch.setattr("scripts.ingest_diet_pdfs.query", fake_query)
+
+    result = extract_diet(fake_pdf)
     assert result == expected
 
 

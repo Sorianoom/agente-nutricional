@@ -2,7 +2,8 @@ fastapi
 uvicorn[standard]
 psycopg[binary]
 python-dotenv
-anthropic
+claude-agent-sdk
+anyio
 requests
 jinja2
 python-multipart
