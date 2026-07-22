@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 CREATE TABLE foods (
     id SERIAL PRIMARY KEY,
     mercadona_product_id TEXT NOT NULL UNIQUE,
