@@ -1,13 +1,56 @@
 import json
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.db import get_connection
 
 app = FastAPI()
 templates = Jinja2Templates(directory="app/templates")
+
+ACTIVITY_LEVELS = ["sedentario", "ligero", "moderado", "intenso"]
+GOALS = ["deficit", "maintenance", "surplus"]
+
+
+def get_user_profile() -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT age, sex, height_cm, activity_level, current_goal "
+                "FROM user_profile WHERE id = 1"
+            )
+            row = cur.fetchone()
+    if row is None:
+        return None
+    return {
+        "age": row[0],
+        "sex": row[1],
+        "height_cm": float(row[2]),
+        "activity_level": row[3],
+        "current_goal": row[4],
+    }
+
+
+def save_user_profile(
+    age: int, sex: str, height_cm: float, activity_level: str, current_goal: str
+) -> None:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO user_profile (id, age, sex, height_cm, activity_level, current_goal, updated_at)
+                VALUES (1, %s, %s, %s, %s, %s, now())
+                ON CONFLICT (id) DO UPDATE SET
+                    age = EXCLUDED.age,
+                    sex = EXCLUDED.sex,
+                    height_cm = EXCLUDED.height_cm,
+                    activity_level = EXCLUDED.activity_level,
+                    current_goal = EXCLUDED.current_goal,
+                    updated_at = now()
+                """,
+                (age, sex, height_cm, activity_level, current_goal),
+            )
 
 
 @app.get("/health")
@@ -62,6 +105,33 @@ def get_diet_macros_series() -> list[dict]:
         }
         for row in rows
     ]
+
+
+@app.get("/perfil")
+def perfil_form(request: Request):
+    template = templates.get_template("perfil.html")
+    return HTMLResponse(
+        template.render(
+            {
+                "request": request,
+                "profile": get_user_profile(),
+                "activity_levels": ACTIVITY_LEVELS,
+                "goals": GOALS,
+            }
+        )
+    )
+
+
+@app.post("/perfil")
+def perfil_save(
+    age: int = Form(...),
+    sex: str = Form(...),
+    height_cm: float = Form(...),
+    activity_level: str = Form(...),
+    current_goal: str = Form(...),
+):
+    save_user_profile(age, sex, height_cm, activity_level, current_goal)
+    return RedirectResponse("/perfil", status_code=303)
 
 
 @app.get("/")
