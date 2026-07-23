@@ -860,13 +860,14 @@ def get_latest_agent_macro_target() -> dict | None:
 
 def compute_formula_macro_target(profile: dict) -> dict:
     body_metrics = get_body_metrics_for_tdee()
+    latest_weight = body_metrics[-1]["weight_kg"] if body_metrics else None
+    if latest_weight is None:
+        raise ValueError("No hay medidas corporales para calcular macros objetivo")
+
     tdee = compute_real_tdee(body_metrics, get_diet_versions_daily_kcal())
     method_label = "real"
     if tdee is None:
         method_label = "mifflin"
-        latest_weight = body_metrics[-1]["weight_kg"] if body_metrics else None
-        if latest_weight is None:
-            raise ValueError("No hay medidas corporales para calcular Mifflin-St Jeor")
         tdee = mifflin_st_jeor(
             age=profile["age"],
             sex=profile["sex"],
@@ -874,7 +875,6 @@ def compute_formula_macro_target(profile: dict) -> dict:
             weight_kg=latest_weight,
             activity_level=profile["activity_level"],
         )
-    latest_weight = body_metrics[-1]["weight_kg"] if body_metrics else profile["height_cm"]
     result = split_macros(tdee, profile["current_goal"], latest_weight)
     result["method_label"] = method_label
     return result
