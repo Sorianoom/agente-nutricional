@@ -28,7 +28,7 @@
 **Interfaces:**
 - Produces: tablas Postgres `user_profile` (fila única, `id=1`) y `macro_targets` (histórico append-only).
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 `tests/test_db_schema.py`:
 ```python
@@ -55,7 +55,7 @@ def test_expected_tables_exist():
     } <= tables
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_db_schema.py -v`
 Expected: FAIL (`user_profile`/`macro_targets` no están en `tables`).
@@ -131,7 +131,9 @@ CREATE TABLE IF NOT EXISTS macro_targets (
 );
 ```
 
-- [ ] **Step 4: Simplifica `tests/conftest.py` para aplicar siempre el esquema completo**
+- [x] **Step 3: Reescribe `db/schema.sql` completo, idempotente**
+
+- [x] **Step 4: Simplifica `tests/conftest.py` para aplicar siempre el esquema completo**
 
 Reemplaza `_apply_schema_if_missing` (ya no hace falta comprobar si `foods` existe, porque el `.sql` completo es idempotente):
 
@@ -148,7 +150,7 @@ _create_test_database_if_missing()
 _apply_schema()
 ```
 
-- [ ] **Step 5: Ejecuta el test para verificar que pasa**
+- [x] **Step 5: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_db_schema.py -v`
 Expected: PASS
@@ -169,12 +171,16 @@ docker compose exec postgres psql -U nutricion -d nutricion -c "\dt"
 ```
 Expected: aparecen `user_profile` y `macro_targets` en el listado.
 
+- [x] **Step 6: Aplica las tablas nuevas a la base de datos real, sin destruir datos**
+
 - [ ] **Step 7: Commit**
 
 ```bash
 git add db/schema.sql tests/conftest.py tests/test_db_schema.py
 git commit -m "Add user_profile and macro_targets tables, make schema.sql idempotent"
 ```
+
+- [x] **Step 7: Commit**
 
 ---
 
@@ -188,7 +194,7 @@ git commit -m "Add user_profile and macro_targets tables, make schema.sql idempo
 **Interfaces:**
 - Produces: `GET /perfil` (formulario, precargado si ya existe perfil), `POST /perfil` (guarda y redirige a `/perfil`).
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 `tests/test_perfil.py`:
 ```python
@@ -237,12 +243,12 @@ def test_post_perfil_saves_and_get_reflects_it():
     assert row == (23, "M", "moderado", "maintenance")
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_perfil.py -v`
 Expected: FAIL con `404 Not Found` (la ruta no existe).
 
-- [ ] **Step 3: Añade a `app/main.py`**
+- [x] **Step 3: Añade a `app/main.py`**
 
 ```python
 from fastapi import Form
@@ -319,7 +325,7 @@ def perfil_save(
     return RedirectResponse("/perfil", status_code=303)
 ```
 
-- [ ] **Step 4: Crea `app/templates/perfil.html`**
+- [x] **Step 4: Crea `app/templates/perfil.html`**
 
 ```html
 {% extends "base.html" %}
@@ -358,12 +364,12 @@ def perfil_save(
 {% endblock %}
 ```
 
-- [ ] **Step 5: Ejecuta el test para verificar que pasa**
+- [x] **Step 5: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_perfil.py -v`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/main.py app/templates/perfil.html tests/test_perfil.py
