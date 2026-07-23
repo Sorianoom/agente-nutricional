@@ -32,17 +32,11 @@ def _create_test_database_if_missing() -> None:
                 pass
 
 
-def _apply_schema_if_missing() -> None:
+def _apply_schema() -> None:
     with get_connection() as conn:
         with conn.cursor() as cur:
-            # Idempotente y barato: se ejecuta siempre, incluso si el resto
-            # del schema ya se aplico en una corrida anterior de la suite.
-            cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
-            cur.execute("SELECT to_regclass('public.foods')")
-            if cur.fetchone()[0] is not None:
-                return
             cur.execute(SCHEMA_PATH.read_text())
 
 
 _create_test_database_if_missing()
-_apply_schema_if_missing()
+_apply_schema()

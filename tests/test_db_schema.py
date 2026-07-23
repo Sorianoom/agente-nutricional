@@ -11,4 +11,11 @@ def test_expected_tables_exist():
                 """
             )
             tables = {row[0] for row in cur.fetchall()}
-    assert {"foods", "diet_versions", "diet_meals", "body_metrics"} <= tables
+    assert {
+        "foods",
+        "diet_versions",
+        "diet_meals",
+        "body_metrics",
+        "user_profile",
+        "macro_targets",
+    } <= tables
