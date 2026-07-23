@@ -4,6 +4,7 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app.agent_macros import compute_agent_macro_target
 from app.db import get_connection
 from app.macros import compute_real_tdee, mifflin_st_jeor, split_macros
 
@@ -274,6 +275,52 @@ def macros_page(request: Request):
                 "agent": get_latest_agent_macro_target(),
             }
         )
+    )
+
+
+def save_agent_macro_target(goal: str, result: dict) -> None:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO macro_targets (method, goal, kcal, protein_g, carbs_g, fat_g, explanation)
+                VALUES ('agent', %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    goal,
+                    result["kcal"],
+                    result["protein_g"],
+                    result["carbs_g"],
+                    result["fat_g"],
+                    result["explanation"],
+                ),
+            )
+
+
+@app.post("/macros/recalcular-ia")
+def macros_recalcular_ia(request: Request):
+    profile = get_user_profile()
+    body_metrics = get_body_metrics_for_tdee()
+    real_tdee = compute_real_tdee(body_metrics, get_diet_versions_daily_kcal())
+    summary = {
+        "profile": profile,
+        "goal": profile["current_goal"],
+        "real_tdee": real_tdee,
+        "weight_history": [
+            {
+                "date": m["measured_on"].isoformat(),
+                "weight_kg": m["weight_kg"],
+                "body_fat_pct": m["body_fat_pct"],
+            }
+            for m in body_metrics
+        ],
+    }
+    result = compute_agent_macro_target(summary)
+    save_agent_macro_target(profile["current_goal"], result)
+
+    template = templates.get_template("_agent_result.html")
+    return HTMLResponse(
+        template.render({"request": request, "agent": get_latest_agent_macro_target()})
     )
 
 

@@ -963,7 +963,7 @@ git commit -m "Add macro targets comparison page with deterministic calculation"
 **Interfaces:**
 - Produces: `app.agent_macros.compute_agent_macro_target(summary: dict) -> dict` (llama al Agent SDK, devuelve `kcal`/`protein_g`/`carbs_g`/`fat_g`/`explanation`), `POST /macros/recalcular-ia`.
 
-- [ ] **Step 1: Escribe el test que falla (`app/agent_macros.py`)**
+- [x] **Step 1: Escribe el test que falla (`app/agent_macros.py`)**
 
 `tests/test_agent_macros.py`:
 ```python
@@ -1009,12 +1009,12 @@ def test_compute_agent_macro_target_parses_structured_output(monkeypatch):
     assert result == expected
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_agent_macros.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'app.agent_macros'`.
 
-- [ ] **Step 3: Implementa `app/agent_macros.py`**
+- [x] **Step 3: Implementa `app/agent_macros.py`**
 
 ```python
 import json
@@ -1072,12 +1072,12 @@ def compute_agent_macro_target(summary: dict) -> dict:
     return anyio.run(_run)
 ```
 
-- [ ] **Step 4: Ejecuta el test para verificar que pasa**
+- [x] **Step 4: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_agent_macros.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Extrae el partial `#agent-result` en `app/templates/macros.html`**
+- [x] **Step 5: Extrae el partial `#agent-result` en `app/templates/macros.html`**
 
 Crea `app/templates/_agent_result.html`:
 ```html
@@ -1106,7 +1106,7 @@ En `app/templates/macros.html`, reemplaza el bloque `<div id="agent-result">...<
 {% include "_agent_result.html" %}
 ```
 
-- [ ] **Step 6: Añade a `app/main.py` la ruta `POST /macros/recalcular-ia`**
+- [x] **Step 6: Añade a `app/main.py` la ruta `POST /macros/recalcular-ia`**
 
 ```python
 from app.agent_macros import compute_agent_macro_target
@@ -1158,7 +1158,7 @@ def macros_recalcular_ia(request: Request):
     )
 ```
 
-- [ ] **Step 7: Extiende `tests/test_macros_page.py` con un test mockeado del botón**
+- [x] **Step 7: Extiende `tests/test_macros_page.py` con un test mockeado del botón**
 
 Añade al archivo:
 ```python
@@ -1201,12 +1201,12 @@ def test_recalcular_ia_saves_and_returns_partial(monkeypatch):
 
 (Elimina la función `fake_compute` no usada del bloque anterior si el editor la deja huérfana — solo `fake_compute_sync` hace falta, ya que `compute_agent_macro_target` es una función síncrona normal desde el punto de vista de quien la llama.)
 
-- [ ] **Step 8: Ejecuta toda la suite de macros para verificar que pasa**
+- [x] **Step 8: Ejecuta toda la suite de macros para verificar que pasa**
 
 Run: `python -m pytest tests/test_agent_macros.py tests/test_macros_page.py -v`
 Expected: PASS
 
-- [ ] **Step 9: Verifica visualmente en el navegador**
+- [x] **Step 9: Verifica visualmente en el navegador**
 
 Run: `docker compose up -d --build`
 Abre `http://localhost:8000/perfil`, rellena el perfil. Abre `http://localhost:8000/medidas`, registra una medida. Abre `http://localhost:8000/macros`, pulsa "Recalcular con IA" y confirma que aparece una recomendación real (esto sí gasta una llamada real de la suscripción — hazlo una vez para confirmar, no en bucle).

@@ -34,3 +34,37 @@ def test_macros_page_requires_profile():
     response = client.get("/macros")
     assert response.status_code == 200
     assert "perfil" in response.text.lower()
+
+
+def test_recalcular_ia_saves_and_returns_partial(monkeypatch):
+    _seed_profile()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM macro_targets WHERE method = 'agent' "
+                "AND explanation = 'Recomendacion de prueba.'"
+            )
+
+    def fake_compute_sync(summary):
+        return {
+            "kcal": 2400,
+            "protein_g": 180,
+            "carbs_g": 250,
+            "fat_g": 67,
+            "explanation": "Recomendacion de prueba.",
+        }
+
+    monkeypatch.setattr("app.main.compute_agent_macro_target", fake_compute_sync)
+
+    response = client.post("/macros/recalcular-ia")
+    assert response.status_code == 200
+    assert "Recomendacion de prueba" in response.text
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT count(*) FROM macro_targets WHERE method = 'agent' "
+                "AND explanation = 'Recomendacion de prueba.'"
+            )
+            count = cur.fetchone()[0]
+    assert count == 1
