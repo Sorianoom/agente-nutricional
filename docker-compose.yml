@@ -19,6 +19,8 @@ services:
       POSTGRES_PASSWORD: nutricion
     ports:
       - "8000:8000"
+    volumes:
+      - ${CLAUDE_CREDENTIALS_PATH}:/root/.claude/.credentials.json:ro
     depends_on:
       - postgres
 
