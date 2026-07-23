@@ -1211,7 +1211,7 @@ Expected: PASS
 Run: `docker compose up -d --build`
 Abre `http://localhost:8000/perfil`, rellena el perfil. Abre `http://localhost:8000/medidas`, registra una medida. Abre `http://localhost:8000/macros`, pulsa "Recalcular con IA" y confirma que aparece una recomendación real (esto sí gasta una llamada real de la suscripción — hazlo una vez para confirmar, no en bucle).
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add app/agent_macros.py app/main.py app/templates/macros.html app/templates/_agent_result.html tests/test_agent_macros.py tests/test_macros_page.py
