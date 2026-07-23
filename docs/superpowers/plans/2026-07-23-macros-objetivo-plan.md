@@ -548,7 +548,7 @@ git commit -m "Add manual body metrics entry form"
 
 Sin dependencias de base de datos — solo lógica, con datos sintéticos en los tests.
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 `tests/test_macros.py`:
 ```python
@@ -634,12 +634,12 @@ def test_split_macros_maintenance_and_surplus_use_lower_protein_ratio():
 
 Añade `import pytest` al principio del archivo.
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_macros.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'app.macros'`.
 
-- [ ] **Step 3: Implementa `app/macros.py`**
+- [x] **Step 3: Implementa `app/macros.py`**
 
 ```python
 ACTIVITY_MULTIPLIERS = {
@@ -717,12 +717,12 @@ def split_macros(tdee: float, goal: str, weight_kg: float) -> dict:
     }
 ```
 
-- [ ] **Step 4: Ejecuta el test para verificar que pasa**
+- [x] **Step 4: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_macros.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/macros.py tests/test_macros.py
