@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Medidas{% endblock %}
+{% block content %}
+<h1>Registrar medida del gimnasio</h1>
+<form method="post" action="/medidas">
+  <label>Fecha
+    <input type="date" name="measured_on" required>
+  </label>
+  <label>Peso (kg)
+    <input type="number" step="0.1" name="weight_kg" required>
+  </label>
+  <label>% grasa corporal
+    <input type="number" step="0.1" name="body_fat_pct" required>
+  </label>
+  <label>Masa musculoesquelética (kg)
+    <input type="number" step="0.1" name="muscle_mass_kg" required>
+  </label>
+  <button type="submit">Guardar</button>
+</form>
+
+<h2>Historico</h2>
+<table>
+  <thead>
+    <tr><th>Fecha</th><th>Peso (kg)</th><th>% grasa</th></tr>
+  </thead>
+  <tbody>
+    {% for m in medidas %}
+    <tr><td>{{ m.date }}</td><td>{{ m.weight_kg }}</td><td>{{ m.body_fat_pct }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

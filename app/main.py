@@ -134,6 +134,42 @@ def perfil_save(
     return RedirectResponse("/perfil", status_code=303)
 
 
+def save_manual_body_metric(
+    measured_on: str, weight_kg: float, body_fat_pct: float, muscle_mass_kg: float
+) -> int:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO body_metrics
+                    (source_pdf_filename, measured_on, weight_kg, body_fat_pct, muscle_mass_kg)
+                VALUES ('manual', %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (measured_on, weight_kg, body_fat_pct, muscle_mass_kg),
+            )
+            return cur.fetchone()[0]
+
+
+@app.get("/medidas")
+def medidas_form(request: Request):
+    template = templates.get_template("medidas.html")
+    return HTMLResponse(
+        template.render({"request": request, "medidas": get_body_metrics_series()})
+    )
+
+
+@app.post("/medidas")
+def medidas_save(
+    measured_on: str = Form(...),
+    weight_kg: float = Form(...),
+    body_fat_pct: float = Form(...),
+    muscle_mass_kg: float = Form(...),
+):
+    save_manual_body_metric(measured_on, weight_kg, body_fat_pct, muscle_mass_kg)
+    return RedirectResponse("/medidas", status_code=303)
+
+
 @app.get("/")
 def dashboard(request: Request):
     body_metrics_json = json.dumps(get_body_metrics_series())

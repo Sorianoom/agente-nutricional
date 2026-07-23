@@ -388,7 +388,7 @@ git commit -m "Add user profile form"
 **Interfaces:**
 - Produces: `GET /medidas` (formulario + tabla de medidas existentes), `POST /medidas` (inserta fila en `body_metrics` con `source_pdf_filename = 'manual'`, redirige a `/medidas`).
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 `tests/test_medidas.py`:
 ```python
@@ -440,12 +440,12 @@ def test_get_medidas_shows_form():
     assert "form" in response.text.lower()
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_medidas.py -v`
 Expected: FAIL con `404 Not Found`.
 
-- [ ] **Step 3: Añade a `app/main.py`**
+- [x] **Step 3: Añade a `app/main.py`**
 
 ```python
 def save_manual_body_metric(
@@ -486,7 +486,7 @@ def medidas_save(
 
 (`get_body_metrics_series()` ya existe en `app/main.py` desde el Subsistema 1.)
 
-- [ ] **Step 4: Crea `app/templates/medidas.html`**
+- [x] **Step 4: Crea `app/templates/medidas.html`**
 
 ```html
 {% extends "base.html" %}
@@ -523,12 +523,12 @@ def medidas_save(
 {% endblock %}
 ```
 
-- [ ] **Step 5: Ejecuta el test para verificar que pasa**
+- [x] **Step 5: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_medidas.py -v`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/main.py app/templates/medidas.html tests/test_medidas.py
