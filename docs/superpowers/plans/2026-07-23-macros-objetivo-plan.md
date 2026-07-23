@@ -742,7 +742,7 @@ git commit -m "Add deterministic real-TDEE and macro split calculation"
 - Consumes: `app.macros.compute_real_tdee`, `app.macros.mifflin_st_jeor`, `app.macros.split_macros`, tabla `macro_targets` (solo lectura del último `method='agent'`).
 - Produces: `GET /macros`.
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 `tests/test_macros_page.py`:
 ```python
@@ -784,12 +784,12 @@ def test_macros_page_requires_profile():
     assert "perfil" in response.text.lower()
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_macros_page.py -v`
 Expected: FAIL con `404 Not Found`.
 
-- [ ] **Step 3: Añade a `app/main.py`**
+- [x] **Step 3: Añade a `app/main.py`**
 
 ```python
 from app.macros import compute_real_tdee, mifflin_st_jeor, split_macros
@@ -901,7 +901,7 @@ def macros_page(request: Request):
     )
 ```
 
-- [ ] **Step 4: Crea `app/templates/macros.html`**
+- [x] **Step 4: Crea `app/templates/macros.html`**
 
 ```html
 {% extends "base.html" %}
@@ -938,12 +938,12 @@ def macros_page(request: Request):
 {% endblock %}
 ```
 
-- [ ] **Step 5: Ejecuta el test para verificar que pasa**
+- [x] **Step 5: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_macros_page.py -v`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/main.py app/templates/macros.html tests/test_macros_page.py

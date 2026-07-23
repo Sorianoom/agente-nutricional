@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.db import get_connection
+from app.macros import compute_real_tdee, mifflin_st_jeor, split_macros
 
 app = FastAPI()
 templates = Jinja2Templates(directory="app/templates")
@@ -168,6 +169,112 @@ def medidas_save(
 ):
     save_manual_body_metric(measured_on, weight_kg, body_fat_pct, muscle_mass_kg)
     return RedirectResponse("/medidas", status_code=303)
+
+
+def get_body_metrics_for_tdee() -> list[dict]:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT measured_on, weight_kg, body_fat_pct FROM body_metrics "
+                "WHERE weight_kg IS NOT NULL AND body_fat_pct IS NOT NULL "
+                "ORDER BY measured_on"
+            )
+            rows = cur.fetchall()
+    return [
+        {"measured_on": row[0], "weight_kg": float(row[1]), "body_fat_pct": float(row[2])}
+        for row in rows
+    ]
+
+
+def get_diet_versions_daily_kcal() -> list[dict]:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    dv.valid_from,
+                    dv.valid_to,
+                    COALESCE(SUM(dm.quantity_grams / 100.0 * f.kcal_100g), 0)
+                        / NULLIF(COUNT(DISTINCT dm.day_label), 0) AS daily_kcal
+                FROM diet_versions dv
+                LEFT JOIN diet_meals dm ON dm.diet_version_id = dv.id
+                LEFT JOIN foods f ON f.id = dm.matched_food_id
+                GROUP BY dv.id, dv.valid_from, dv.valid_to
+                ORDER BY dv.valid_from
+                """
+            )
+            rows = cur.fetchall()
+    return [
+        {"valid_from": row[0], "valid_to": row[1], "daily_kcal": float(row[2] or 0)}
+        for row in rows
+    ]
+
+
+def get_latest_agent_macro_target() -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT goal, kcal, protein_g, carbs_g, fat_g, explanation, computed_at
+                FROM macro_targets WHERE method = 'agent'
+                ORDER BY computed_at DESC LIMIT 1
+                """
+            )
+            row = cur.fetchone()
+    if row is None:
+        return None
+    return {
+        "goal": row[0],
+        "kcal": float(row[1]),
+        "protein_g": float(row[2]),
+        "carbs_g": float(row[3]),
+        "fat_g": float(row[4]),
+        "explanation": row[5],
+        "computed_at": row[6].isoformat(),
+    }
+
+
+def compute_formula_macro_target(profile: dict) -> dict:
+    body_metrics = get_body_metrics_for_tdee()
+    latest_weight = body_metrics[-1]["weight_kg"] if body_metrics else None
+    if latest_weight is None:
+        raise ValueError("No hay medidas corporales para calcular macros objetivo")
+
+    tdee = compute_real_tdee(body_metrics, get_diet_versions_daily_kcal())
+    method_label = "real"
+    if tdee is None:
+        method_label = "mifflin"
+        tdee = mifflin_st_jeor(
+            age=profile["age"],
+            sex=profile["sex"],
+            height_cm=profile["height_cm"],
+            weight_kg=latest_weight,
+            activity_level=profile["activity_level"],
+        )
+    result = split_macros(tdee, profile["current_goal"], latest_weight)
+    result["method_label"] = method_label
+    return result
+
+
+@app.get("/macros")
+def macros_page(request: Request):
+    profile = get_user_profile()
+    template = templates.get_template("macros.html")
+    if profile is None:
+        return HTMLResponse(
+            template.render({"request": request, "profile": None})
+        )
+    formula_result = compute_formula_macro_target(profile)
+    return HTMLResponse(
+        template.render(
+            {
+                "request": request,
+                "profile": profile,
+                "formula": formula_result,
+                "agent": get_latest_agent_macro_target(),
+            }
+        )
+    )
 
 
 @app.get("/")
