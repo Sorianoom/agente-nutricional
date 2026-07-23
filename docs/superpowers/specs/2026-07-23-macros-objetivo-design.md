@@ -14,6 +14,13 @@ macros objetivo debería seguir el usuario de aquí en adelante.
 
 - Perfil de usuario básico (edad, sexo, altura, nivel de actividad, objetivo
   actual).
+- Registro manual de nuevas medidas corporales (peso, % grasa, kg de masa
+  musculoesquelética, fecha). El usuario ya no acude al nutricionista, ahora
+  se pesa en el gimnasio y esos son los tres datos que le devuelven — encajan
+  con las columnas ya existentes de `body_metrics` (`weight_kg`,
+  `body_fat_pct`, `muscle_mass_kg`), pero hasta ahora esa tabla solo se
+  rellenaba vía ingesta de PDF (Subsistema 1). Sin esta pantalla, el cálculo
+  determinista de TDEE real se quedaría sin datos nuevos a partir de ahora.
 - Dos métodos de cálculo de macros objetivo, mostrados en comparación:
   1. Determinista — TDEE real calculado a partir del histórico de energía
      (kcal comidas vs cambio real de masa grasa observado).
@@ -88,12 +95,17 @@ recomendación). Se guarda el resultado en `macro_targets` con
 
 1. El usuario rellena/actualiza su perfil y elige objetivo en un formulario
    web (`user_profile`).
-2. Al visitar la página de macros objetivo, se calcula al vuelo el método
-   determinista y se muestra junto al último resultado guardado del método
-   IA (si existe).
-3. Un botón "Recalcular con IA" dispara una nueva llamada al Agent SDK y
+2. El usuario registra nuevas medidas del gimnasio (peso, % grasa, kg de
+   masa musculoesquelética, fecha) en un formulario simple que inserta una
+   fila en `body_metrics` (mismo esquema que ya usa la ingesta de PDF; se
+   guarda `source_pdf_filename = 'manual'` para distinguir el origen, sin
+   necesidad de tocar el esquema ya que la columna es `NOT NULL`).
+3. Al visitar la página de macros objetivo, se calcula al vuelo el método
+   determinista (usando también las medidas registradas manualmente) y se
+   muestra junto al último resultado guardado del método IA (si existe).
+4. Un botón "Recalcular con IA" dispara una nueva llamada al Agent SDK y
    guarda el resultado nuevo en `macro_targets`.
-4. Ambos resultados se muestran en una vista de comparación (kcal y macros
+5. Ambos resultados se muestran en una vista de comparación (kcal y macros
    lado a lado).
 
 ## Manejo de errores
@@ -117,3 +129,5 @@ recomendación). Se guarda el resultado en `macro_targets` con
 - Llamada al Agent SDK: test con el cliente mockeado (mismo patrón que las
   Tareas 4 y 5 del Subsistema 1), sin llamada real en los tests automáticos.
 - Formulario de perfil: test de guardado/carga vía `TestClient`.
+- Formulario de registro manual de medidas corporales: test de inserción en
+  `body_metrics` vía `TestClient`.
