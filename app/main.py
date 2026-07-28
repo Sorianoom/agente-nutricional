@@ -1,7 +1,8 @@
 import json
+from datetime import date
 
 import anyio
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -466,6 +467,57 @@ async def generar_dieta_comida(request: Request):
     return HTMLResponse(
         meal_card + f'<div id="guardar-section" hx-swap-oob="true">{guardar_section}</div>'
     )
+
+
+def save_generated_day(meals: list) -> int:
+    today = date.today().isoformat()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO diet_versions (source_pdf_filename, valid_from, valid_to)
+                VALUES ('generado', %s, %s)
+                RETURNING id
+                """,
+                (today, today),
+            )
+            diet_version_id = cur.fetchone()[0]
+            cur.executemany(
+                """
+                INSERT INTO diet_meals
+                    (diet_version_id, day_label, meal_name, food_item, quantity_grams, matched_food_id)
+                VALUES (%s, 'dia', %s, %s, %s, %s)
+                """,
+                [
+                    (
+                        diet_version_id,
+                        meal["meal_name"],
+                        meal["food_item"],
+                        meal["quantity_grams"],
+                        meal["matched_food_id"],
+                    )
+                    for meal in meals
+                ],
+            )
+    return diet_version_id
+
+
+@app.post("/generar-dieta/guardar")
+async def generar_dieta_guardar(request: Request):
+    form = dict((await request.form()).items())
+    target = {
+        "kcal": float(form["target_kcal"]),
+        "protein_g": float(form["target_protein_g"]),
+        "carbs_g": float(form["target_carbs_g"]),
+        "fat_g": float(form["target_fat_g"]),
+    }
+    meals = [_meal_from_form_fields(form, name) for name in MEAL_NAMES]
+    totals = _day_totals(meals)
+    if not within_tolerance(totals, target):
+        raise HTTPException(status_code=400, detail="El dia esta fuera de margen, no se puede guardar")
+
+    save_generated_day(meals)
+    return HTMLResponse('<div class="card"><p><span class="badge good">Guardado como comido</span></p></div>')
 
 
 @app.get("/")

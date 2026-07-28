@@ -98,3 +98,102 @@ def test_generar_dieta_comida_regenerates_one_meal_and_updates_guardar_section(m
     assert response.status_code == 200
     assert "Salmon" in response.text
     assert 'id="guardar-section"' in response.text
+
+
+def _seed_test_foods_for_guardar() -> dict:
+    # La base de datos de test es persistente entre ejecuciones (no se recrea
+    # desde cero), asi que los ids de `foods` no son necesariamente 1-4 como
+    # asume el literal del plan (aqui ya hay filas de ejecuciones anteriores
+    # de otros subsistemas). Sembramos filas propias marcadas con un
+    # mercadona_product_id de test y usamos sus ids reales devueltos, en vez
+    # de hardcodear 1/2/3/4, para no violar la FK matched_food_id -> foods(id).
+    product_ids = {
+        "desayuno": "test-guardar-desayuno",
+        "comida": "test-guardar-comida",
+        "merienda": "test-guardar-merienda",
+        "cena": "test-guardar-cena",
+    }
+    ids = {}
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            for meal_name, product_id in product_ids.items():
+                cur.execute("DELETE FROM foods WHERE mercadona_product_id = %s", (product_id,))
+                cur.execute(
+                    """
+                    INSERT INTO foods
+                        (mercadona_product_id, name, category, kcal_100g, protein_100g, carbs_100g, fat_100g)
+                    VALUES (%s, 'Alimento de prueba', 'Test', 100, 10, 10, 10)
+                    RETURNING id
+                    """,
+                    (product_id,),
+                )
+                ids[meal_name] = cur.fetchone()[0]
+    return ids
+
+
+def test_guardar_dia_creates_diet_version_when_within_tolerance():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM diet_meals WHERE diet_version_id IN "
+                "(SELECT id FROM diet_versions WHERE source_pdf_filename = 'generado')"
+            )
+            cur.execute("DELETE FROM diet_versions WHERE source_pdf_filename = 'generado'")
+
+    food_ids = _seed_test_foods_for_guardar()
+
+    response = client.post(
+        "/generar-dieta/guardar",
+        data={
+            "target_kcal": "982.5", "target_protein_g": "101.5",
+            "target_carbs_g": "70", "target_fat_g": "33",
+            "goal": "maintenance",
+            "meal_desayuno_food_item": "Avena integral", "meal_desayuno_quantity_grams": "100",
+            "meal_desayuno_matched_food_id": str(food_ids["desayuno"]), "meal_desayuno_kcal": "350",
+            "meal_desayuno_protein_g": "13", "meal_desayuno_carbs_g": "60", "meal_desayuno_fat_g": "7",
+            "meal_comida_food_item": "Pechuga de pollo", "meal_comida_quantity_grams": "200",
+            "meal_comida_matched_food_id": str(food_ids["comida"]), "meal_comida_kcal": "220",
+            "meal_comida_protein_g": "46", "meal_comida_carbs_g": "0", "meal_comida_fat_g": "4",
+            "meal_merienda_food_item": "Yogur proteico", "meal_merienda_quantity_grams": "125",
+            "meal_merienda_matched_food_id": str(food_ids["merienda"]), "meal_merienda_kcal": "112.5",
+            "meal_merienda_protein_g": "12.5", "meal_merienda_carbs_g": "10", "meal_merienda_fat_g": "2.5",
+            "meal_cena_food_item": "Salmon", "meal_cena_quantity_grams": "150",
+            "meal_cena_matched_food_id": str(food_ids["cena"]), "meal_cena_kcal": "300",
+            "meal_cena_protein_g": "30", "meal_cena_carbs_g": "0", "meal_cena_fat_g": "19.5",
+        },
+    )
+    assert response.status_code == 200
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT count(*) FROM diet_meals dm "
+                "JOIN diet_versions dv ON dv.id = dm.diet_version_id "
+                "WHERE dv.source_pdf_filename = 'generado'"
+            )
+            count = cur.fetchone()[0]
+    assert count == 4
+
+
+def test_guardar_dia_rejects_out_of_tolerance_data():
+    response = client.post(
+        "/generar-dieta/guardar",
+        data={
+            "target_kcal": "2000", "target_protein_g": "150",
+            "target_carbs_g": "200", "target_fat_g": "60",
+            "goal": "maintenance",
+            "meal_desayuno_food_item": "Avena integral", "meal_desayuno_quantity_grams": "1",
+            "meal_desayuno_matched_food_id": "1", "meal_desayuno_kcal": "1",
+            "meal_desayuno_protein_g": "1", "meal_desayuno_carbs_g": "1", "meal_desayuno_fat_g": "1",
+            "meal_comida_food_item": "Pechuga de pollo", "meal_comida_quantity_grams": "1",
+            "meal_comida_matched_food_id": "2", "meal_comida_kcal": "1",
+            "meal_comida_protein_g": "1", "meal_comida_carbs_g": "1", "meal_comida_fat_g": "1",
+            "meal_merienda_food_item": "Yogur proteico", "meal_merienda_quantity_grams": "1",
+            "meal_merienda_matched_food_id": "3", "meal_merienda_kcal": "1",
+            "meal_merienda_protein_g": "1", "meal_merienda_carbs_g": "1", "meal_merienda_fat_g": "1",
+            "meal_cena_food_item": "Salmon", "meal_cena_quantity_grams": "1",
+            "meal_cena_matched_food_id": "4", "meal_cena_kcal": "1",
+            "meal_cena_protein_g": "1", "meal_cena_carbs_g": "1", "meal_cena_fat_g": "1",
+        },
+    )
+    assert response.status_code == 400

@@ -1568,7 +1568,7 @@ git commit -m "Add single-meal regeneration keeping the other three meals fixed"
 **Interfaces:**
 - Produces: `app.main.save_generated_day(meals: list[dict]) -> int` (devuelve `diet_version_id`), ruta `POST /generar-dieta/guardar`.
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 Añade a `tests/test_generar_dieta_page.py`:
 ```python
@@ -1638,12 +1638,12 @@ def test_guardar_dia_rejects_out_of_tolerance_data():
     assert response.status_code == 400
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_generar_dieta_page.py -v`
 Expected: FAIL con `404 Not Found`.
 
-- [ ] **Step 3: Añade a `app/main.py`**
+- [x] **Step 3: Añade a `app/main.py`**
 
 ```python
 from datetime import date
@@ -1702,22 +1702,32 @@ async def generar_dieta_guardar(request: Request):
     return HTMLResponse('<div class="card"><p><span class="badge good">Guardado como comido</span></p></div>')
 ```
 
-- [ ] **Step 4: Ejecuta el test para verificar que pasa**
+- [x] **Step 4: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_generar_dieta_page.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Ejecuta toda la suite del subsistema para verificar que no hay regresiones**
+- [x] **Step 5: Ejecuta toda la suite del subsistema para verificar que no hay regresiones**
 
 Run: `python -m pytest tests/ -v`
 Expected: todos los tests pasan (Subsistemas 1, 2 y 3 completos).
 
-- [ ] **Step 6: Verifica visualmente en el navegador**
+- [x] **Step 6: Verifica visualmente en el navegador (parcial — ver desviación en task-6-report.md)**
 
 Run: `docker compose up -d --build`
 Abre `http://localhost:8000/generar-dieta`, genera un día, ajusta comidas hasta que quede dentro de margen, pulsa "Guardar este dia como comido" y confirma en `http://localhost:8000/` (dashboard) que aparece una nueva versión de dieta. Esto hace llamadas reales a la suscripción — hazlo una vez para confirmar, no en bucle.
 
-- [ ] **Step 7: Commit**
+Hecho vía llamadas HTTP reales equivalentes a la UI (no navegador gráfico, ver justificación en el
+informe): generación real de un día completo + 3 regeneraciones reales de comida individual (~44
+min de llamadas reales al Agent SDK). El día real generado no llegó a converger dentro del ±5%
+tras esos ajustes (kcal y proteína seguían fuera de margen). Se confirmó en su lugar, con esos
+mismos datos reales, que la app real (`localhost:8000`, base de datos de producción) responde
+`400` al intento de guardado fuera de margen y no crea ninguna `diet_version` nueva — la
+propiedad crítica de este task. El camino feliz (guardar dentro de margen + aparición en el
+dashboard) está verificado por los tests automáticos de integración contra Postgres real (no
+mockeados). Detalle completo en `task-6-report.md`.
+
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/main.py tests/test_generar_dieta_page.py
