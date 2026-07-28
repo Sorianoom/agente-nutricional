@@ -1,6 +1,9 @@
 <div id="agent-result">
   {% if agent %}
-  <p>Kcal: {{ agent.kcal }} | Proteina: {{ agent.protein_g }}g | Carbohidratos: {{ agent.carbs_g }}g | Grasa: {{ agent.fat_g }}g</p>
+  <div class="macro-row"><span class="label">Kcal</span><span class="value">{{ agent.kcal }}</span></div>
+  <div class="macro-row"><span class="label">Proteina</span><span class="value">{{ agent.protein_g }} g</span></div>
+  <div class="macro-row"><span class="label">Carbohidratos</span><span class="value">{{ agent.carbs_g }} g</span></div>
+  <div class="macro-row"><span class="label">Grasa</span><span class="value">{{ agent.fat_g }} g</span></div>
   <p>{{ agent.explanation }}</p>
   <p><small>Calculado el {{ agent.computed_at }}</small></p>
   {% else %}

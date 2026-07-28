@@ -2,6 +2,7 @@
 {% block title %}Medidas{% endblock %}
 {% block content %}
 <h1>Registrar medida del gimnasio</h1>
+<div class="card">
 <form method="post" action="/medidas">
   <label>Fecha
     <input type="date" name="measured_on" required>
@@ -17,7 +18,9 @@
   </label>
   <button type="submit">Guardar</button>
 </form>
+</div>
 
+<div class="card">
 <h2>Historico</h2>
 <table>
   <thead>
@@ -29,4 +32,5 @@
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% endblock %}

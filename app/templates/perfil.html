@@ -2,6 +2,7 @@
 {% block title %}Perfil{% endblock %}
 {% block content %}
 <h1>Perfil</h1>
+<div class="card">
 <form method="post" action="/perfil">
   <label>Edad
     <input type="number" name="age" value="{{ profile.age if profile else '' }}" required>
@@ -31,4 +32,5 @@
   </label>
   <button type="submit">Guardar</button>
 </form>
+</div>
 {% endblock %}

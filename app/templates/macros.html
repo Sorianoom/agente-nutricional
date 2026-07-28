@@ -3,14 +3,24 @@
 {% block content %}
 <h1>Macros objetivo</h1>
 {% if not profile %}
-<p>Falta completar el <a href="/perfil">perfil</a> antes de calcular macros.</p>
-{% else %}
-<div id="formula-result">
-  <h2>Metodo determinista ({{ formula.method_label }})</h2>
-  <p>Kcal: {{ formula.kcal }} | Proteina: {{ formula.protein_g }}g | Carbohidratos: {{ formula.carbs_g }}g | Grasa: {{ formula.fat_g }}g</p>
+<div class="card">
+  <p>Falta completar el <a href="/perfil">perfil</a> antes de calcular macros.</p>
 </div>
-
-<h2>Metodo IA (Claude Agent SDK)</h2>
-{% include "_agent_result.html" %}
+{% else %}
+<div class="card-grid">
+  <div class="card" id="formula-result">
+    <h2>Metodo determinista ({{ formula.method_label }})</h2>
+    <hr class="hr-thin">
+    <div class="macro-row"><span class="label">Kcal</span><span class="value">{{ formula.kcal }}</span></div>
+    <div class="macro-row"><span class="label">Proteina</span><span class="value">{{ formula.protein_g }} g</span></div>
+    <div class="macro-row"><span class="label">Carbohidratos</span><span class="value">{{ formula.carbs_g }} g</span></div>
+    <div class="macro-row"><span class="label">Grasa</span><span class="value">{{ formula.fat_g }} g</span></div>
+  </div>
+  <div class="card">
+    <h2>Metodo IA (Claude Agent SDK)</h2>
+    <hr class="hr-thin">
+    {% include "_agent_result.html" %}
+  </div>
+</div>
 {% endif %}
 {% endblock %}
