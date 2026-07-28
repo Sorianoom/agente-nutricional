@@ -477,7 +477,7 @@ git commit -m "Add shared design system (warm nutrition-label look) across all p
 
 **Importante — no degradar el rendimiento de `match_unlinked_meals`:** esa función procesa potencialmente cientos de filas en un bucle dentro de una única conexión/transacción. Refactorízala para que siga abriendo **una sola conexión** para todo el bucle y delegue solo la consulta SQL de similitud a `find_matching_food_with_cursor(cur, ...)` — NO la cambies para que abra una conexión nueva por fila (en este entorno cada conexión a Postgres puede tardar bastante, ver `tests/conftest.py` y las notas de entornos anteriores).
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 `tests/test_food_matching.py`:
 ```python
@@ -508,12 +508,12 @@ def test_find_matching_food_returns_none_below_threshold():
     assert match is None
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_food_matching.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'app.food_matching'`.
 
-- [ ] **Step 3: Implementa `app/food_matching.py`**
+- [x] **Step 3: Implementa `app/food_matching.py`**
 
 ```python
 SIMILARITY_THRESHOLD = 0.3
@@ -551,12 +551,12 @@ def find_matching_food(name: str) -> dict | None:
             return find_matching_food_with_cursor(cur, name)
 ```
 
-- [ ] **Step 4: Ejecuta el test para verificar que pasa**
+- [x] **Step 4: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_food_matching.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Refactoriza `scripts/match_foods.py` para reutilizar la función compartida**
+- [x] **Step 5: Refactoriza `scripts/match_foods.py` para reutilizar la función compartida**
 
 ```python
 import re
@@ -599,12 +599,12 @@ if __name__ == "__main__":
     print(f"Enlazados {linked} alimentos.")
 ```
 
-- [ ] **Step 6: Ejecuta los tests existentes de `match_foods.py` para confirmar que el refactor no cambió el comportamiento**
+- [x] **Step 6: Ejecuta los tests existentes de `match_foods.py` para confirmar que el refactor no cambió el comportamiento**
 
 Run: `python -m pytest tests/test_match_foods.py tests/test_food_matching.py -v`
 Expected: PASS (los mismos tests que ya existían siguen pasando tal cual).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/food_matching.py scripts/match_foods.py tests/test_food_matching.py
