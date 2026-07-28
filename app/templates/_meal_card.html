@@ -1,0 +1,12 @@
+<div class="card">
+  <h3>{{ meal.meal_name | capitalize }}</h3>
+  <hr class="hr-thin">
+  <p>{{ meal.food_item }} — {{ meal.quantity_grams }} g</p>
+  {% if not meal.verified %}
+  <p><span class="badge bad">sin verificar</span></p>
+  {% endif %}
+  <div class="macro-row"><span class="label">Kcal</span><span class="value">{{ "%.0f" | format(meal.kcal) }}</span></div>
+  <div class="macro-row"><span class="label">Proteina</span><span class="value">{{ "%.1f" | format(meal.protein_g) }} g</span></div>
+  <div class="macro-row"><span class="label">Carbohidratos</span><span class="value">{{ "%.1f" | format(meal.carbs_g) }} g</span></div>
+  <div class="macro-row"><span class="label">Grasa</span><span class="value">{{ "%.1f" | format(meal.fat_g) }} g</span></div>
+</div>

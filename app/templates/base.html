@@ -162,6 +162,7 @@
     <a href="/perfil" {% if request.url.path == '/perfil' %}class="active"{% endif %}>Perfil</a>
     <a href="/medidas" {% if request.url.path == '/medidas' %}class="active"{% endif %}>Medidas</a>
     <a href="/macros" {% if request.url.path == '/macros' %}class="active"{% endif %}>Macros</a>
+    <a href="/generar-dieta" {% if request.url.path == '/generar-dieta' %}class="active"{% endif %}>Generar dieta</a>
   </nav>
   <main class="page">
     {% block content %}{% endblock %}

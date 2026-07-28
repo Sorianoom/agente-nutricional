@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.agent_macros import compute_agent_macro_target
 from app.db import get_connection
+from app.diet_generator import MEAL_NAMES, generate_day
 from app.macros import compute_real_tdee, mifflin_st_jeor, split_macros
 
 app = FastAPI()
@@ -321,6 +322,84 @@ def macros_recalcular_ia(request: Request):
     template = templates.get_template("_agent_result.html")
     return HTMLResponse(
         template.render({"request": request, "agent": get_latest_agent_macro_target()})
+    )
+
+
+def _current_macro_target(method: str, profile: dict) -> tuple[dict, str] | None:
+    if method == "formula":
+        try:
+            result = compute_formula_macro_target(profile)
+        except ValueError:
+            return None
+        return result, profile["current_goal"]
+    agent_result = get_latest_agent_macro_target()
+    if agent_result is None:
+        return None
+    return agent_result, agent_result["goal"]
+
+
+@app.get("/generar-dieta")
+def generar_dieta_form(request: Request):
+    profile = get_user_profile()
+    template = templates.get_template("generar_dieta.html")
+    return HTMLResponse(
+        template.render({"request": request, "profile": profile, "meal_names": MEAL_NAMES, "day": None})
+    )
+
+
+@app.post("/generar-dieta")
+def generar_dieta_generate(
+    request: Request,
+    method: str = Form(...),
+    hint_desayuno: str = Form(""),
+    hint_comida: str = Form(""),
+    hint_merienda: str = Form(""),
+    hint_cena: str = Form(""),
+):
+    profile = get_user_profile()
+    template = templates.get_template("generar_dieta.html")
+    if profile is None:
+        return HTMLResponse(
+            template.render({"request": request, "profile": None, "meal_names": MEAL_NAMES, "day": None})
+        )
+
+    target = _current_macro_target(method, profile)
+    if target is None:
+        return HTMLResponse(
+            template.render(
+                {
+                    "request": request,
+                    "profile": profile,
+                    "meal_names": MEAL_NAMES,
+                    "day": None,
+                    "no_target_available": True,
+                    "method": method,
+                }
+            )
+        )
+
+    macro_target, goal = target
+    hints = {
+        "desayuno": hint_desayuno,
+        "comida": hint_comida,
+        "merienda": hint_merienda,
+        "cena": hint_cena,
+    }
+    day = generate_day(macro_target, goal, hints)
+
+    return HTMLResponse(
+        template.render(
+            {
+                "request": request,
+                "profile": profile,
+                "meal_names": MEAL_NAMES,
+                "day": day,
+                "target": macro_target,
+                "goal": goal,
+                "method": method,
+                "hints": hints,
+            }
+        )
     )
 
 
