@@ -1,3 +1,7 @@
+# Por debajo de esto, un nombre generico (ej. "Yogur proteico") tiende a
+# enlazar con productos equivocados (ej. "Yogur sabor coco") solo por
+# parecido superficial de caracteres. Mejor dejarlo sin enlazar que enlazarlo
+# mal, ya que un match erroneo contamina en silencio las macros calculadas.
 SIMILARITY_THRESHOLD = 0.3
 
 
