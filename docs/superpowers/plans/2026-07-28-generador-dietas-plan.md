@@ -624,7 +624,7 @@ git commit -m "Extract reusable food-matching function shared by match_foods.py 
 
 Sin dependencias de base de datos ni del Agent SDK todavía — solo lógica pura, con datos sintéticos en los tests.
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 `tests/test_diet_generator.py`:
 ```python
@@ -667,12 +667,12 @@ def test_remaining_budget_with_no_fixed_meals_equals_target():
     assert remaining_budget(TARGET, []) == TARGET
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_diet_generator.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'app.diet_generator'`.
 
-- [ ] **Step 3: Implementa las funciones puras en `app/diet_generator.py`**
+- [x] **Step 3: Implementa las funciones puras en `app/diet_generator.py`**
 
 ```python
 MACRO_KEYS = ("kcal", "protein_g", "carbs_g", "fat_g")
@@ -702,12 +702,12 @@ def remaining_budget(target: dict, fixed_meals: list) -> dict:
     return {key: target[key] - consumed[key] for key in MACRO_KEYS}
 ```
 
-- [ ] **Step 4: Ejecuta el test para verificar que pasa**
+- [x] **Step 4: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_diet_generator.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/diet_generator.py tests/test_diet_generator.py
@@ -729,7 +729,7 @@ git commit -m "Add tolerance check and remaining-budget pure functions for diet 
 - Consumes: `app.food_matching.find_matching_food`, `app.macros.compute_real_tdee`/`mifflin_st_jeor`/`split_macros` vía `app.main.compute_formula_macro_target`, `app.main.get_latest_agent_macro_target`, `app.main.get_user_profile`.
 - Produces: `app.diet_generator.generate_day(target: dict, goal: str, hints: dict) -> dict` (devuelve `{"meals": [...], "totals": {...}, "within_tolerance": bool, "attempts": int}`), ruta `GET /generar-dieta`, ruta `POST /generar-dieta`.
 
-- [ ] **Step 1: Escribe el test que falla (`generate_day`, con Agent SDK y emparejamiento mockeados)**
+- [x] **Step 1: Escribe el test que falla (`generate_day`, con Agent SDK y emparejamiento mockeados)**
 
 Añade a `tests/test_diet_generator.py`:
 ```python
@@ -823,12 +823,12 @@ def test_generate_day_includes_hints_in_prompt(monkeypatch):
     assert "jamon" in captured_prompts[0]
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_diet_generator.py -v`
 Expected: FAIL con `ImportError: cannot import name 'generate_day' from 'app.diet_generator'`.
 
-- [ ] **Step 3: Añade a `app/diet_generator.py`**
+- [x] **Step 3: Añade a `app/diet_generator.py`**
 
 ```python
 import json
@@ -951,12 +951,12 @@ def generate_day(target: dict, goal: str, hints: dict) -> dict:
 
 (Añade estos imports/definiciones **encima** de las funciones puras ya existentes en el archivo, o reordena según prefieras — `MACRO_KEYS`, `MEAL_NAMES`, `EXCLUDED_FOODS`, `MAX_ATTEMPTS`, `within_tolerance` y `remaining_budget` de la Tarea 3 se mantienen sin cambios.)
 
-- [ ] **Step 4: Ejecuta el test para verificar que pasa**
+- [x] **Step 4: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_diet_generator.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Escribe el test que falla para la página**
+- [x] **Step 5: Escribe el test que falla para la página**
 
 `tests/test_generar_dieta_page.py`:
 ```python
@@ -1023,12 +1023,12 @@ def test_post_generar_dieta_shows_generated_meals(monkeypatch):
     assert "Salmon" in response.text
 ```
 
-- [ ] **Step 6: Ejecuta el test para verificar que falla**
+- [x] **Step 6: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_generar_dieta_page.py -v`
 Expected: FAIL con `404 Not Found`.
 
-- [ ] **Step 7: Añade a `app/main.py`**
+- [x] **Step 7: Añade a `app/main.py`**
 
 ```python
 from app.diet_generator import MEAL_NAMES, generate_day
@@ -1112,7 +1112,7 @@ def generar_dieta_generate(
     )
 ```
 
-- [ ] **Step 8: Crea `app/templates/_meal_card.html`**
+- [x] **Step 8: Crea `app/templates/_meal_card.html`**
 
 ```html
 <div class="card">
@@ -1129,7 +1129,7 @@ def generar_dieta_generate(
 </div>
 ```
 
-- [ ] **Step 9: Crea `app/templates/generar_dieta.html`**
+- [x] **Step 9: Crea `app/templates/generar_dieta.html`**
 
 ```html
 {% extends "base.html" %}
@@ -1186,12 +1186,12 @@ def generar_dieta_generate(
 {% endblock %}
 ```
 
-- [ ] **Step 10: Ejecuta el test para verificar que pasa**
+- [x] **Step 10: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_generar_dieta_page.py -v`
 Expected: PASS
 
-- [ ] **Step 11: Añade el enlace al `<nav>` de `app/templates/base.html`**
+- [x] **Step 11: Añade el enlace al `<nav>` de `app/templates/base.html`**
 
 ```html
 <a href="/generar-dieta" {% if request.url.path == '/generar-dieta' %}class="active"{% endif %}>Generar dieta</a>
@@ -1199,12 +1199,12 @@ Expected: PASS
 
 (Justo después del enlace a "Macros".)
 
-- [ ] **Step 12: Verifica que la suite completa sigue en verde**
+- [x] **Step 12: Verifica que la suite completa sigue en verde**
 
 Run: `python -m pytest tests/ -v`
 Expected: todos los tests pasan (los de este subsistema y los de los anteriores).
 
-- [ ] **Step 13: Commit**
+- [x] **Step 13: Commit**
 
 ```bash
 git add app/diet_generator.py app/main.py app/templates/generar_dieta.html app/templates/_meal_card.html app/templates/base.html tests/test_diet_generator.py tests/test_generar_dieta_page.py
