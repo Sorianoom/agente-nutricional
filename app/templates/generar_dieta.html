@@ -30,22 +30,30 @@
 {% endif %}
 
 {% if day %}
-<div class="card">
-  <h2>Objetivo del dia</h2>
-  <div class="macro-row"><span class="label">Kcal</span><span class="value">{{ "%.0f" | format(target.kcal) }}</span></div>
-  <div class="macro-row"><span class="label">Proteina</span><span class="value">{{ "%.1f" | format(target.protein_g) }} g</span></div>
-  <div class="macro-row"><span class="label">Carbohidratos</span><span class="value">{{ "%.1f" | format(target.carbs_g) }} g</span></div>
-  <div class="macro-row"><span class="label">Grasa</span><span class="value">{{ "%.1f" | format(target.fat_g) }} g</span></div>
-  {% if day.within_tolerance %}
-  <p><span class="badge good">dentro de margen (±5%)</span></p>
-  {% else %}
-  <p><span class="badge bad">fuera de margen tras {{ day.attempts }} intentos</span></p>
-  {% endif %}
-</div>
-<div class="card-grid">
-  {% for meal in day.meals %}
-  {% include "_meal_card.html" %}
-  {% endfor %}
+<div id="day-state">
+  <input type="hidden" name="target_kcal" value="{{ target.kcal }}">
+  <input type="hidden" name="target_protein_g" value="{{ target.protein_g }}">
+  <input type="hidden" name="target_carbs_g" value="{{ target.carbs_g }}">
+  <input type="hidden" name="target_fat_g" value="{{ target.fat_g }}">
+  <input type="hidden" name="goal" value="{{ goal }}">
+
+  <div class="card">
+    <h2>Objetivo del dia</h2>
+    <div class="macro-row"><span class="label">Kcal</span><span class="value">{{ "%.0f" | format(target.kcal) }}</span></div>
+    <div class="macro-row"><span class="label">Proteina</span><span class="value">{{ "%.1f" | format(target.protein_g) }} g</span></div>
+    <div class="macro-row"><span class="label">Carbohidratos</span><span class="value">{{ "%.1f" | format(target.carbs_g) }} g</span></div>
+    <div class="macro-row"><span class="label">Grasa</span><span class="value">{{ "%.1f" | format(target.fat_g) }} g</span></div>
+  </div>
+
+  <div class="card-grid">
+    {% for meal in day.meals %}
+    {% include "_meal_card.html" %}
+    {% endfor %}
+  </div>
+
+  <div id="guardar-section">
+    {% include "_guardar_section.html" %}
+  </div>
 </div>
 {% endif %}
 {% endif %}

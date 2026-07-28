@@ -1228,7 +1228,7 @@ git commit -m "Add full-day diet generation via Agent SDK with tolerance-checked
 
 **Diseño de estado sin servidor (HTMX):** todo el día actual vive como inputs ocultos dentro de `<div id="day-state">` (target del día +, por cada comida, `food_item`/`quantity_grams`/`matched_food_id`/`verified`/`kcal`/`protein_g`/`carbs_g`/`fat_g`). El botón "Cambiar esta comida" de cada tarjeta usa `hx-include="#day-state"` para reenviar todo ese estado junto con su propio nuevo campo de directriz, y `hx-vals` para indicar qué comida se está regenerando. La respuesta devuelve dos fragmentos: la tarjeta de esa comida actualizada (swap normal) y la sección "Guardar" actualizada vía `hx-swap-oob="true"` (para reflejar si el día completo sigue dentro de margen tras el cambio).
 
-- [ ] **Step 1: Escribe el test que falla (`generate_single_meal`)**
+- [x] **Step 1: Escribe el test que falla (`generate_single_meal`)**
 
 Añade a `tests/test_diet_generator.py`:
 ```python
@@ -1254,12 +1254,12 @@ def test_generate_single_meal_returns_resolved_meal(monkeypatch):
     assert "attempts" in meal
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_diet_generator.py -v`
 Expected: FAIL con `ImportError: cannot import name 'generate_single_meal'`.
 
-- [ ] **Step 3: Añade a `app/diet_generator.py`**
+- [x] **Step 3: Añade a `app/diet_generator.py`**
 
 ```python
 def _call_agent_for_meal(meal_name: str, budget: dict, goal: str, hint: str, previous_attempt_note: str) -> dict:
@@ -1318,12 +1318,12 @@ def generate_single_meal(meal_name: str, budget: dict, goal: str, hint: str) -> 
     return meal
 ```
 
-- [ ] **Step 4: Ejecuta el test para verificar que pasa**
+- [x] **Step 4: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_diet_generator.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Reescribe `app/templates/_meal_card.html`** (añade directriz + botón + campos ocultos del estado de esta comida)
+- [x] **Step 5: Reescribe `app/templates/_meal_card.html`** (añade directriz + botón + campos ocultos del estado de esta comida)
 
 ```html
 <div class="card" id="meal-{{ meal.meal_name }}">
@@ -1361,7 +1361,7 @@ Expected: PASS
 </div>
 ```
 
-- [ ] **Step 6: Reescribe `app/templates/generar_dieta.html`** para envolver los resultados en `#day-state` y extraer la sección "Guardar" a un partial
+- [x] **Step 6: Reescribe `app/templates/generar_dieta.html`** para envolver los resultados en `#day-state` y extraer la sección "Guardar" a un partial
 
 ```html
 {% extends "base.html" %}
@@ -1426,7 +1426,7 @@ Expected: PASS
 {% endblock %}
 ```
 
-- [ ] **Step 7: Crea `app/templates/_guardar_section.html`**
+- [x] **Step 7: Crea `app/templates/_guardar_section.html`**
 
 ```html
 <div class="card">
@@ -1446,7 +1446,7 @@ Expected: PASS
 </div>
 ```
 
-- [ ] **Step 8: Añade a `app/main.py` la ruta `POST /generar-dieta/comida`**
+- [x] **Step 8: Añade a `app/main.py` la ruta `POST /generar-dieta/comida`**
 
 ```python
 from app.diet_generator import generate_single_meal, remaining_budget
@@ -1499,7 +1499,7 @@ async def generar_dieta_comida(request: Request):
 
 (Importa también `_day_totals` y `within_tolerance` desde `app.diet_generator` en la cabecera de `app/main.py` junto al resto de imports de ese módulo.)
 
-- [ ] **Step 9: Escribe y ejecuta los tests de la ruta**
+- [x] **Step 9: Escribe y ejecuta los tests de la ruta**
 
 Añade a `tests/test_generar_dieta_page.py`:
 ```python
@@ -1545,12 +1545,12 @@ def test_generar_dieta_comida_regenerates_one_meal_and_updates_guardar_section(m
 Run: `python -m pytest tests/test_generar_dieta_page.py -v`
 Expected: PASS
 
-- [ ] **Step 10: Verifica visualmente en el navegador**
+- [x] **Step 10: Verifica visualmente en el navegador**
 
 Run: `docker compose up -d --build`
 Abre `http://localhost:8000/generar-dieta`, genera un día, pulsa "Cambiar esta comida" en una tarjeta y confirma que solo esa tarjeta cambia (esto hace llamadas reales a la suscripción — hazlo con moderación, no en bucle).
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add app/diet_generator.py app/main.py app/templates/_meal_card.html app/templates/generar_dieta.html app/templates/_guardar_section.html tests/test_diet_generator.py tests/test_generar_dieta_page.py

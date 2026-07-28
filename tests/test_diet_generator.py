@@ -2,7 +2,12 @@ import json
 
 from claude_agent_sdk import ResultMessage
 
-from app.diet_generator import generate_day, remaining_budget, within_tolerance
+from app.diet_generator import (
+    generate_day,
+    generate_single_meal,
+    remaining_budget,
+    within_tolerance,
+)
 
 TARGET = {"kcal": 2000.0, "protein_g": 150.0, "carbs_g": 200.0, "fat_g": 60.0}
 
@@ -128,3 +133,26 @@ def test_generate_day_includes_hints_in_prompt(monkeypatch):
 
     generate_day(DAY_TARGET, "maintenance", {"desayuno": "jamon"})
     assert "jamon" in captured_prompts[0]
+
+
+# Coincide con salmon (150g) via FAKE_MATCHES: kcal=200*1.5=300,
+# protein=20*1.5=30, carbs=0*1.5=0, fat=13*1.5=19.5 -> exacto, dentro de
+# margen en el primer intento.
+MEAL_BUDGET = {"kcal": 300.0, "protein_g": 30.0, "carbs_g": 0.0, "fat_g": 19.5}
+
+
+def test_generate_single_meal_returns_resolved_meal(monkeypatch):
+    async def fake_query(prompt, options):
+        yield _fake_result({"food_item": "salmon", "quantity_grams": 150})
+
+    monkeypatch.setattr("app.diet_generator.query", fake_query)
+    monkeypatch.setattr(
+        "app.diet_generator.find_matching_food",
+        lambda name: FAKE_MATCHES.get(name),
+    )
+
+    meal = generate_single_meal("cena", MEAL_BUDGET, "maintenance", "salmon")
+    assert meal["meal_name"] == "cena"
+    assert meal["food_item"] == "salmon"
+    assert "within_tolerance" in meal
+    assert "attempts" in meal

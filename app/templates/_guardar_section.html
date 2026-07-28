@@ -1,0 +1,15 @@
+<div class="card">
+  {% if day.within_tolerance %}
+  <p><span class="badge good">dentro de margen (±5%)</span></p>
+  <button
+    hx-post="/generar-dieta/guardar"
+    hx-include="#day-state"
+    hx-target="#guardar-section"
+    hx-swap="innerHTML">
+    Guardar este dia como comido
+  </button>
+  {% else %}
+  <p><span class="badge bad">fuera de margen tras {{ day.attempts }} intentos</span> — sigue cambiando comidas hasta que cuadre.</p>
+  <button disabled>Guardar este dia como comido</button>
+  {% endif %}
+</div>

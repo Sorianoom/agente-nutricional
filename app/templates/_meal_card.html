@@ -1,4 +1,4 @@
-<div class="card">
+<div class="card" id="meal-{{ meal.meal_name }}">
   <h3>{{ meal.meal_name | capitalize }}</h3>
   <hr class="hr-thin">
   <p>{{ meal.food_item }} — {{ meal.quantity_grams }} g</p>
@@ -9,4 +9,25 @@
   <div class="macro-row"><span class="label">Proteina</span><span class="value">{{ "%.1f" | format(meal.protein_g) }} g</span></div>
   <div class="macro-row"><span class="label">Carbohidratos</span><span class="value">{{ "%.1f" | format(meal.carbs_g) }} g</span></div>
   <div class="macro-row"><span class="label">Grasa</span><span class="value">{{ "%.1f" | format(meal.fat_g) }} g</span></div>
+
+  <input type="hidden" name="meal_{{ meal.meal_name }}_food_item" value="{{ meal.food_item }}">
+  <input type="hidden" name="meal_{{ meal.meal_name }}_quantity_grams" value="{{ meal.quantity_grams }}">
+  <input type="hidden" name="meal_{{ meal.meal_name }}_matched_food_id" value="{{ meal.matched_food_id or '' }}">
+  <input type="hidden" name="meal_{{ meal.meal_name }}_kcal" value="{{ meal.kcal }}">
+  <input type="hidden" name="meal_{{ meal.meal_name }}_protein_g" value="{{ meal.protein_g }}">
+  <input type="hidden" name="meal_{{ meal.meal_name }}_carbs_g" value="{{ meal.carbs_g }}">
+  <input type="hidden" name="meal_{{ meal.meal_name }}_fat_g" value="{{ meal.fat_g }}">
+
+  <label>Nueva directriz para {{ meal.meal_name }} (opcional)
+    <input type="text" name="hint_{{ meal.meal_name }}_new" placeholder="ej. salmon">
+  </label>
+  <button
+    class="secondary"
+    hx-post="/generar-dieta/comida"
+    hx-include="#day-state"
+    hx-vals='{"meal_name": "{{ meal.meal_name }}"}'
+    hx-target="#meal-{{ meal.meal_name }}"
+    hx-swap="outerHTML">
+    Cambiar esta comida
+  </button>
 </div>

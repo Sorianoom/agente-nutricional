@@ -1,12 +1,20 @@
 import json
 
+import anyio
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.agent_macros import compute_agent_macro_target
 from app.db import get_connection
-from app.diet_generator import MEAL_NAMES, generate_day
+from app.diet_generator import (
+    MEAL_NAMES,
+    _day_totals,
+    generate_day,
+    generate_single_meal,
+    remaining_budget,
+    within_tolerance,
+)
 from app.macros import compute_real_tdee, mifflin_st_jeor, split_macros
 
 app = FastAPI()
@@ -400,6 +408,63 @@ def generar_dieta_generate(
                 "hints": hints,
             }
         )
+    )
+
+
+def _meal_from_form_fields(form: dict, meal_name: str) -> dict:
+    return {
+        "meal_name": meal_name,
+        "food_item": form[f"meal_{meal_name}_food_item"],
+        "quantity_grams": float(form[f"meal_{meal_name}_quantity_grams"]),
+        "matched_food_id": int(form[f"meal_{meal_name}_matched_food_id"]) if form[f"meal_{meal_name}_matched_food_id"] else None,
+        "verified": bool(form[f"meal_{meal_name}_matched_food_id"]),
+        "kcal": float(form[f"meal_{meal_name}_kcal"]),
+        "protein_g": float(form[f"meal_{meal_name}_protein_g"]),
+        "carbs_g": float(form[f"meal_{meal_name}_carbs_g"]),
+        "fat_g": float(form[f"meal_{meal_name}_fat_g"]),
+    }
+
+
+@app.post("/generar-dieta/comida")
+async def generar_dieta_comida(request: Request):
+    form = dict((await request.form()).items())
+    meal_name = form["meal_name"]
+    target = {
+        "kcal": float(form["target_kcal"]),
+        "protein_g": float(form["target_protein_g"]),
+        "carbs_g": float(form["target_carbs_g"]),
+        "fat_g": float(form["target_fat_g"]),
+    }
+    goal = form["goal"]
+    other_meals = [_meal_from_form_fields(form, name) for name in MEAL_NAMES if name != meal_name]
+    budget = remaining_budget(target, other_meals)
+    hint = form.get(f"hint_{meal_name}_new", "")
+
+    # generate_single_meal() es sincrona y llama internamente a anyio.run()
+    # (via _call_agent_for_meal) para invocar el Agent SDK. Esta ruta es
+    # `async def` (necesitamos `await request.form()`), por lo que se ejecuta
+    # directamente en el event loop principal de uvicorn: llamarla sin mas
+    # revienta con "RuntimeError: Already running asyncio in this thread"
+    # porque anyio.run() no puede arrancar un loop nuevo dentro de uno que ya
+    # esta corriendo. La ruta GET/POST /generar-dieta (sync def) no tiene
+    # este problema porque FastAPI ya la ejecuta en un hilo de threadpool
+    # (via run_in_threadpool) sin loop propio. Aqui replicamos eso a mano
+    # despachando la llamada a un hilo de threadpool con anyio.to_thread.
+    # Confirmado reproduciendo el fallo real contra el servidor en marcha
+    # (ver task-5-report.md) antes de aplicar este fix.
+    new_meal = await anyio.to_thread.run_sync(generate_single_meal, meal_name, budget, goal, hint)
+    all_meals = other_meals + [new_meal]
+    day = {
+        "meals": sorted(all_meals, key=lambda m: MEAL_NAMES.index(m["meal_name"])),
+        "totals": _day_totals(all_meals),
+        "within_tolerance": within_tolerance(_day_totals(all_meals), target),
+        "attempts": new_meal["attempts"],
+    }
+
+    meal_card = templates.get_template("_meal_card.html").render({"meal": new_meal})
+    guardar_section = templates.get_template("_guardar_section.html").render({"day": day})
+    return HTMLResponse(
+        meal_card + f'<div id="guardar-section" hx-swap-oob="true">{guardar_section}</div>'
     )
 
 

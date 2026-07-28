@@ -59,3 +59,42 @@ def test_post_generar_dieta_shows_generated_meals(monkeypatch):
     assert response.status_code == 200
     assert "Avena integral" in response.text
     assert "Salmon" in response.text
+
+
+def test_generar_dieta_comida_regenerates_one_meal_and_updates_guardar_section(monkeypatch):
+    fake_new_meal = {
+        "meal_name": "cena", "food_item": "Salmon", "quantity_grams": 150,
+        "matched_food_id": 4, "verified": True,
+        "kcal": 300.0, "protein_g": 30.0, "carbs_g": 0.0, "fat_g": 19.5,
+        "within_tolerance": True, "attempts": 1,
+    }
+    monkeypatch.setattr(
+        "app.main.generate_single_meal",
+        lambda meal_name, budget, goal, hint: fake_new_meal,
+    )
+
+    response = client.post(
+        "/generar-dieta/comida",
+        data={
+            "meal_name": "cena",
+            "target_kcal": "1000", "target_protein_g": "100",
+            "target_carbs_g": "70", "target_fat_g": "33",
+            "goal": "maintenance",
+            "meal_desayuno_food_item": "Avena integral", "meal_desayuno_quantity_grams": "100",
+            "meal_desayuno_matched_food_id": "1", "meal_desayuno_kcal": "350",
+            "meal_desayuno_protein_g": "13", "meal_desayuno_carbs_g": "60", "meal_desayuno_fat_g": "7",
+            "meal_comida_food_item": "Pechuga de pollo", "meal_comida_quantity_grams": "200",
+            "meal_comida_matched_food_id": "2", "meal_comida_kcal": "220",
+            "meal_comida_protein_g": "46", "meal_comida_carbs_g": "0", "meal_comida_fat_g": "4",
+            "meal_merienda_food_item": "Yogur proteico", "meal_merienda_quantity_grams": "125",
+            "meal_merienda_matched_food_id": "3", "meal_merienda_kcal": "112.5",
+            "meal_merienda_protein_g": "12.5", "meal_merienda_carbs_g": "10", "meal_merienda_fat_g": "2.5",
+            "meal_cena_food_item": "Salmon (anterior)", "meal_cena_quantity_grams": "100",
+            "meal_cena_matched_food_id": "4", "meal_cena_kcal": "200",
+            "meal_cena_protein_g": "20", "meal_cena_carbs_g": "0", "meal_cena_fat_g": "13",
+            "hint_cena_new": "salmon",
+        },
+    )
+    assert response.status_code == 200
+    assert "Salmon" in response.text
+    assert 'id="guardar-section"' in response.text
