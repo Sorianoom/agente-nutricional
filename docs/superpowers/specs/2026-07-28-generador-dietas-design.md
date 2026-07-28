@@ -44,10 +44,18 @@ diseñar manualmente qué comer cada día.
   para esa comida. La comida nueva se genera para cuadrar el **presupuesto de
   macros restante** del día (el target total menos las macros reales ya
   calculadas de las otras 3 comidas que se mantienen fijas).
-- La dieta generada **no se persiste** en la base de datos: es una sugerencia
-  efímera que se muestra en pantalla y desaparece si el usuario navega fuera o
-  recarga. Si el usuario decide seguirla de verdad, registrar que la siguió es
-  una decisión de un subsistema futuro (fuera de alcance aquí).
+- La dieta generada es **efímera mientras se está generando/ajustando**
+  (nada se guarda solo por pulsar "Generar" o "Generar otra"), pero el
+  usuario puede pulsar **"Guardar este día como comido"** para persistirla de
+  verdad: crea una `diet_version` nueva (un solo día) con sus `diet_meals`,
+  usando el mismo `matched_food_id` ya resuelto durante la generación — sin
+  necesidad de volver a emparejar nada. Esto es importante para que el
+  cálculo de TDEE real (Subsistema 2) siga teniendo datos de dieta frescos a
+  medida que el usuario deje de depender de las dietas históricas del
+  nutricionista y empiece a generar las suyas — el mismo motivo por el que
+  el Subsistema 2 añadió el registro manual de medidas del gimnasio.
+  Guardar solo el día que el usuario confirma (no cada intento de
+  "Generar otra") evita contaminar el histórico con propuestas rechazadas.
 
 Fuera de alcance: generar una semana completa; motor de compensación por
 excesos o sustitución por antojo (Subsistema 4); edición manual de la dieta
@@ -126,6 +134,22 @@ Agent SDK, propuesta nueva de las 4 comidas).
    devuelve solo el fragmento HTML de esa comida actualizada (HTMX reemplaza
    únicamente esa tarjeta, las otras 3 no se tocan).
 
+**Guardar el día como comido:**
+
+1. El usuario pulsa "Guardar este día como comido". La petición incluye los
+   datos ya fijados de las 4 comidas actuales (campos ocultos: `food_item`,
+   `quantity_grams`, `matched_food_id` — este último puede ser `null` si esa
+   comida quedó "sin verificar").
+2. El backend crea una fila en `diet_versions` (`valid_from` = fecha de hoy,
+   `valid_to` = la misma fecha — es un día suelto, no un plan de varias
+   semanas) y una fila en `diet_meals` por cada una de las 4 comidas,
+   reutilizando el `matched_food_id` ya resuelto (sin volver a emparejar). El
+   `day_label` es el mismo para las 4 (ej. el nombre del día de la semana),
+   para que el cálculo de kcal media diaria de `get_diet_versions_daily_kcal`
+   (Subsistema 2) las cuente como un solo día.
+3. Confirmación visual de que se guardó; el usuario puede seguir generando
+   otros días después sin que eso afecte a lo ya guardado.
+
 ## Manejo de errores
 
 - Sin macro target disponible → la página no genera nada, pide completar el
@@ -134,7 +158,10 @@ Agent SDK, propuesta nueva de las 4 comidas).
 - Fallo en la llamada al Agent SDK → mensaje de error en esa sección, sin
   romper el resto de la página.
 - Alimento propuesto sin match en el catálogo → se muestra marcado como "no
-  verificado", excluido de la suma de macros reales.
+  verificado", excluido de la suma de macros reales; si el usuario guarda el
+  día igualmente, esa comida se guarda con `matched_food_id = NULL` (igual
+  que ya permite el esquema desde el Subsistema 1 para comidas históricas sin
+  emparejar).
 
 ## Pruebas
 
@@ -150,3 +177,6 @@ Agent SDK, propuesta nueva de las 4 comidas).
 - Ruta de generación inicial y ruta de regenerar una sola comida: tests
   end-to-end vía `TestClient` con el Agent SDK y el emparejamiento
   mockeados.
+- Ruta de guardar el día: test end-to-end vía `TestClient` que verifica que
+  se crea una `diet_version` y sus `diet_meals` con los `matched_food_id`
+  correctos (incluyendo el caso de una comida con `matched_food_id = NULL`).
