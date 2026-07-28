@@ -32,12 +32,12 @@
 **Interfaces:**
 - Produces: clases CSS reutilizables (`.nav`, `.page`, `.card`, `.card-grid`, `.hr-thin`, `.macro-row`, `.badge.good`/`.badge.bad`, estilos de elemento para `form`/`label`/`input`/`select`/`button`/`table`) definidas una sola vez en `base.html`, usadas por todas las páginas.
 
-- [ ] **Step 1: Verifica que la suite completa pasa ANTES de tocar nada (línea base)**
+- [x] **Step 1: Verifica que la suite completa pasa ANTES de tocar nada (línea base)**
 
 Run: `python -m pytest tests/test_dashboard.py tests/test_perfil.py tests/test_medidas.py tests/test_macros_page.py tests/test_agent_macros.py -v`
 Expected: todos PASS (línea base antes del retrofit visual).
 
-- [ ] **Step 2: Reescribe `app/templates/base.html`**
+- [x] **Step 2: Reescribe `app/templates/base.html`**
 
 ```html
 <!doctype html>
@@ -214,7 +214,7 @@ Expected: todos PASS (línea base antes del retrofit visual).
 
 (El enlace "Generar dieta" se añade al `<nav>` en la Tarea 4, cuando la ruta ya exista — no lo añadas todavía, sería un enlace muerto.)
 
-- [ ] **Step 3: Reescribe `app/templates/dashboard.html`** (quita su `<style>` propio, usa las clases compartidas y lee los tokens de `:root` en vez de `.viz-root`)
+- [x] **Step 3: Reescribe `app/templates/dashboard.html`** (quita su `<style>` propio, usa las clases compartidas y lee los tokens de `:root` en vez de `.viz-root`)
 
 ```html
 {% extends "base.html" %}
@@ -307,7 +307,7 @@ Expected: todos PASS (línea base antes del retrofit visual).
 {% endblock %}
 ```
 
-- [ ] **Step 4: Reescribe `app/templates/perfil.html`** (mismo formulario, envuelto en una tarjeta)
+- [x] **Step 4: Reescribe `app/templates/perfil.html`** (mismo formulario, envuelto en una tarjeta)
 
 ```html
 {% extends "base.html" %}
@@ -348,7 +348,7 @@ Expected: todos PASS (línea base antes del retrofit visual).
 {% endblock %}
 ```
 
-- [ ] **Step 5: Reescribe `app/templates/medidas.html`** (mismo formulario y tabla, cada uno en su tarjeta)
+- [x] **Step 5: Reescribe `app/templates/medidas.html`** (mismo formulario y tabla, cada uno en su tarjeta)
 
 ```html
 {% extends "base.html" %}
@@ -389,7 +389,7 @@ Expected: todos PASS (línea base antes del retrofit visual).
 {% endblock %}
 ```
 
-- [ ] **Step 6: Reescribe `app/templates/macros.html`** (mantén el `id="formula-result"` y el texto "Falta completar el perfil" — los tests dependen de ellos)
+- [x] **Step 6: Reescribe `app/templates/macros.html`** (mantén el `id="formula-result"` y el texto "Falta completar el perfil" — los tests dependen de ellos)
 
 ```html
 {% extends "base.html" %}
@@ -420,7 +420,7 @@ Expected: todos PASS (línea base antes del retrofit visual).
 {% endblock %}
 ```
 
-- [ ] **Step 7: Reescribe `app/templates/_agent_result.html`** (mantén `{{ agent.explanation }}` tal cual — el test del botón busca ese texto)
+- [x] **Step 7: Reescribe `app/templates/_agent_result.html`** (mantén `{{ agent.explanation }}` tal cual — el test del botón busca ese texto)
 
 ```html
 <div id="agent-result">
@@ -445,17 +445,17 @@ Expected: todos PASS (línea base antes del retrofit visual).
 </div>
 ```
 
-- [ ] **Step 8: Ejecuta la suite completa para verificar que nada se rompió**
+- [x] **Step 8: Ejecuta la suite completa para verificar que nada se rompió**
 
 Run: `python -m pytest tests/test_dashboard.py tests/test_perfil.py tests/test_medidas.py tests/test_macros_page.py tests/test_agent_macros.py -v`
 Expected: los mismos tests que pasaban en el Step 1 siguen pasando, ahora con el nuevo diseño.
 
-- [ ] **Step 9: Verifica visualmente en el navegador**
+- [x] **Step 9: Verifica visualmente en el navegador**
 
 Run: `docker compose up -d --build`
 Abre `http://localhost:8000/`, `/perfil`, `/medidas`, `/macros`. Confirma que se ve el nuevo diseño (fondo papel, tipografía Barlow/Barlow Condensed, tarjetas, acento dorado) y que no hay errores en la consola.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add app/templates
