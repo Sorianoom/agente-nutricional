@@ -32,6 +32,16 @@ diseñar manualmente qué comer cada día.
   validado en `scripts/match_foods.py` (`similarity > 0.3`), para calcular
   macros **reales** de cada comida propuesta — no se confía en la aritmética
   del propio agente.
+- **Verificación de margen (±5%):** las macros reales calculadas (kcal,
+  proteína, carbos, grasa) del día completo deben quedar dentro de un ±5% del
+  objetivo en las 4 magnitudes para considerarse válidas. Si el agente no lo
+  logra a la primera, el backend reintenta internamente (nuevas llamadas al
+  Agent SDK, ajustando cantidades) hasta un máximo de intentos razonable
+  antes de rendirse y mostrar el mejor resultado obtenido, claramente
+  marcado como "fuera de margen". **No se puede guardar como comido un día
+  (o una comida regenerada individualmente) que esté fuera de margen** — hay
+  que seguir regenerando hasta que cuadre, para no meter datos poco fiables
+  en el histórico que alimenta el TDEE real.
 - El usuario puede dar, opcionalmente, una **directriz de texto libre por
   cada comida** (ej. "jamón" en desayuno, "algo con patata" en comida,
   "salmón" en cena) antes de generar. El agente las trata como orientación
@@ -84,6 +94,15 @@ generada; gestión de la lista de alimentos rechazados desde la UI.
   el estado de las otras 3 comidas (ya fijadas) junto con la directriz nueva
   para la comida a cambiar, y el servidor responde solo con el fragmento de
   esa comida actualizado.
+- **Verificación de margen y reintento interno:** función pura
+  `within_tolerance(real: dict, target: dict, pct=0.05) -> bool` que compara
+  las 4 magnitudes. Tras cada llamada al Agent SDK (día completo o una sola
+  comida), si no está dentro de margen, el backend vuelve a llamar al agente
+  (mismo target, indicándole el desvío obtenido) hasta un máximo de intentos
+  fijo (ej. 5) antes de rendirse y devolver el último resultado, marcado como
+  fuera de margen. El botón "Guardar este día como comido" solo debe estar
+  disponible (y el backend debe rechazar la petición si de todas formas
+  llega) cuando las 4 comidas actuales están dentro de margen.
 
 ## Flujo de datos
 
@@ -110,13 +129,20 @@ generada; gestión de la lista de alimentos rechazados desde la UI.
    catálogo. Para los que no emparejan, se muestran igual pero marcados como
    "sin verificar" y se excluyen de la suma de macros reales (para no falsear
    el total).
-5. La página muestra las 4 comidas propuestas (cada una como su propia
+5. El backend comprueba `within_tolerance` sobre el total del día (suma de
+   las 4 comidas) frente al target. Si no cuadra dentro de ±5%, reintenta
+   internamente (nueva llamada al Agent SDK con el desvío obtenido como
+   contexto) hasta el máximo de intentos; si sigue sin cuadrar, se queda con
+   el último intento.
+6. La página muestra las 4 comidas propuestas (cada una como su propia
    tarjeta, con un campo oculto con sus datos para poder reenviarlos después),
-   con los macros reales calculados (sumados) junto al target, y cualquier
-   aviso de alimentos sin verificar.
+   con los macros reales calculados (sumados) junto al target, cualquier
+   aviso de alimentos sin verificar, y si el día está dentro o fuera de
+   margen (el botón "Guardar este día como comido" solo se activa si está
+   dentro de margen).
 
 **Regenerar el día completo:** el botón "Generar otro día" repite los pasos
-3-5 con el mismo target y las mismas directrices por comida (nueva llamada al
+3-6 con el mismo target y las mismas directrices por comida (nueva llamada al
 Agent SDK, propuesta nueva de las 4 comidas).
 
 **Regenerar una sola comida (ej. solo la cena):**
@@ -130,16 +156,24 @@ Agent SDK, propuesta nueva de las 4 comidas).
 3. El backend llama al Agent SDK igual que en la generación inicial, pero
    pidiendo solo esa comida, con el presupuesto restante como objetivo y la
    directriz nueva.
-4. Se empareja el alimento propuesto contra el catálogo igual que antes, y se
+4. Se empareja el alimento propuesto contra el catálogo igual que antes, se
+   comprueba `within_tolerance` de esa comida frente al presupuesto restante
+   (con el mismo reintento interno hasta el máximo de intentos), y se
    devuelve solo el fragmento HTML de esa comida actualizada (HTMX reemplaza
-   únicamente esa tarjeta, las otras 3 no se tocan).
+   únicamente esa tarjeta, las otras 3 no se tocan) — si tras regenerar esa
+   comida el día completo ya no cuadra dentro de margen, el botón "Guardar"
+   se desactiva de nuevo hasta que vuelva a cuadrar.
 
 **Guardar el día como comido:**
 
-1. El usuario pulsa "Guardar este día como comido". La petición incluye los
-   datos ya fijados de las 4 comidas actuales (campos ocultos: `food_item`,
+1. El usuario pulsa "Guardar este día como comido" (solo disponible si las 4
+   comidas actuales están dentro de margen). La petición incluye los datos ya
+   fijados de las 4 comidas actuales (campos ocultos: `food_item`,
    `quantity_grams`, `matched_food_id` — este último puede ser `null` si esa
-   comida quedó "sin verificar").
+   comida quedó "sin verificar", lo cual por definición ya haría que esa
+   comida no pueda estar dentro de margen). El backend vuelve a comprobar
+   `within_tolerance` con los datos recibidos antes de guardar nada — nunca
+   se fía solo de que el botón estuviera activo en el cliente.
 2. El backend crea una fila en `diet_versions` (`valid_from` = fecha de hoy,
    `valid_to` = la misma fecha — es un día suelto, no un plan de varias
    semanas) y una fila en `diet_meals` por cada una de las 4 comidas,
@@ -158,25 +192,37 @@ Agent SDK, propuesta nueva de las 4 comidas).
 - Fallo en la llamada al Agent SDK → mensaje de error en esa sección, sin
   romper el resto de la página.
 - Alimento propuesto sin match en el catálogo → se muestra marcado como "no
-  verificado", excluido de la suma de macros reales; si el usuario guarda el
-  día igualmente, esa comida se guarda con `matched_food_id = NULL` (igual
-  que ya permite el esquema desde el Subsistema 1 para comidas históricas sin
-  emparejar).
+  verificado", excluido de la suma de macros reales. Como esa comida pasa a
+  contar como 0 kcal/macros en el total real, en la práctica el día casi
+  siempre queda fuera de margen mientras haya una comida sin verificar — lo
+  que bloquea el guardado hasta que esa comida se regenere y sí encuentre un
+  alimento del catálogo real.
+- Tras el máximo de intentos internos, el día (o la comida regenerada) sigue
+  fuera de margen → se muestra igualmente, claramente marcado como "fuera de
+  margen", con el botón "Guardar" desactivado; el usuario puede seguir
+  pidiendo "Generar otra"/"Cambiar esta comida" manualmente para intentarlo
+  de nuevo.
 
 ## Pruebas
 
 - Emparejamiento alimento→catálogo: tests con datos sintéticos (reutilizando
   o extendiendo los ya existentes de `match_foods.py`).
+- `within_tolerance`: función pura, tests con datos sintéticos conocidos
+  (dentro de margen, justo en el límite del 5%, fuera de margen en cada una
+  de las 4 magnitudes por separado).
 - Cálculo del presupuesto restante (target total menos 3 comidas fijas):
   función pura, tests con datos sintéticos conocidos.
 - Llamada al Agent SDK (generación de día completo y de una sola comida):
   test con cliente mockeado (mismo patrón que `tests/test_agent_macros.py` y
   `tests/test_ingest_diet_pdfs.py`), sin llamada real en los tests
   automáticos. Verificar que las directrices por comida se incluyen en el
-  prompt cuando existen.
+  prompt cuando existen, y que el reintento interno se dispara cuando el
+  primer intento mockeado queda fuera de margen (y para de reintentar tras
+  el máximo de intentos).
 - Ruta de generación inicial y ruta de regenerar una sola comida: tests
   end-to-end vía `TestClient` con el Agent SDK y el emparejamiento
   mockeados.
 - Ruta de guardar el día: test end-to-end vía `TestClient` que verifica que
   se crea una `diet_version` y sus `diet_meals` con los `matched_food_id`
-  correctos (incluyendo el caso de una comida con `matched_food_id = NULL`).
+  correctos cuando está dentro de margen, y que la ruta rechaza el guardado
+  (sin crear nada) si los datos recibidos están fuera de margen.
