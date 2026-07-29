@@ -34,6 +34,10 @@
 <div class="card"><p>No hay ningun objetivo de macros disponible. Ve a <a href="/macros">Macros</a>.</p></div>
 {% endif %}
 
+{% if craving_exceeds_target %}
+<div class="card"><p><span class="badge bad">No cabe</span> el antojo por si solo ya iguala o supera el objetivo de kcal del dia. Reduce la cantidad o elige un objetivo distinto.</p></div>
+{% endif %}
+
 {% if result %}
 <div class="card-grid">
   {% for meal in result.meals %}

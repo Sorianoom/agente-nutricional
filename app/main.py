@@ -675,6 +675,19 @@ def antojo_fit(
     craving_meal = _resolve_meal(craving_meal_name, {"food_item": craving_food_item, "quantity_grams": craving_quantity_grams})
     budget = remaining_budget(macro_target, [craving_meal])
 
+    if budget["kcal"] <= 0:
+        return HTMLResponse(
+            template.render(
+                {
+                    "request": request,
+                    "profile": profile,
+                    "meal_names": MEAL_NAMES,
+                    "result": None,
+                    "craving_exceeds_target": True,
+                }
+            )
+        )
+
     remaining_names = tuple(name for name in MEAL_NAMES if name != craving_meal_name)
     rest_of_day = generate_day(budget, goal, {}, meal_names=remaining_names)
 
