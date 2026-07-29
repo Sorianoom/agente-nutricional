@@ -64,3 +64,13 @@ CREATE TABLE IF NOT EXISTS macro_targets (
     explanation TEXT,
     computed_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS pending_compensation (
+    id SERIAL PRIMARY KEY,
+    kcal_delta NUMERIC NOT NULL,
+    protein_g_delta NUMERIC NOT NULL,
+    carbs_g_delta NUMERIC NOT NULL,
+    fat_g_delta NUMERIC NOT NULL,
+    days_total INTEGER NOT NULL DEFAULT 3,
+    created_at DATE NOT NULL DEFAULT CURRENT_DATE
+);

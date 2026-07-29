@@ -18,4 +18,5 @@ def test_expected_tables_exist():
         "body_metrics",
         "user_profile",
         "macro_targets",
+        "pending_compensation",
     } <= tables
