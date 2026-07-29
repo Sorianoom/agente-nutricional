@@ -33,7 +33,7 @@ de diseño del Subsistema 4 en la spec.
 - Produces: tabla Postgres `pending_compensation` (a lo sumo una fila activa a la vez, sin
   constraint de unicidad forzada en BD — la aplicación garantiza que solo haya una).
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 Añade `"pending_compensation"` al `set` esperado en `tests/test_db_schema.py`:
 ```python
@@ -48,12 +48,12 @@ Añade `"pending_compensation"` al `set` esperado en `tests/test_db_schema.py`:
     } <= tables
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_db_schema.py -v`
 Expected: FAIL (`pending_compensation` no está en `tables`).
 
-- [ ] **Step 3: Añade a `db/schema.sql`**
+- [x] **Step 3: Añade a `db/schema.sql`**
 
 ```sql
 CREATE TABLE IF NOT EXISTS pending_compensation (
@@ -67,12 +67,12 @@ CREATE TABLE IF NOT EXISTS pending_compensation (
 );
 ```
 
-- [ ] **Step 4: Ejecuta el test para verificar que pasa**
+- [x] **Step 4: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_db_schema.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Aplica la tabla nueva a la base de datos real, sin destruir datos**
+- [x] **Step 5: Aplica la tabla nueva a la base de datos real, sin destruir datos**
 
 **No uses `docker compose down -v`.**
 
@@ -83,7 +83,7 @@ docker compose exec postgres psql -U nutricion -d nutricion -c "\dt"
 Expected: `pending_compensation` aparece en el listado, junto con todas las tablas anteriores
 intactas.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add db/schema.sql tests/test_db_schema.py
@@ -113,7 +113,7 @@ página, así que un contador de llamadas agotaría la ventana de 3 días en min
 alguna tentación de añadir un contador de "veces aplicado", detente: es exactamente el error de
 diseño que la spec fue corregida para evitar.
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 `tests/test_compensation.py`:
 ```python
@@ -230,12 +230,12 @@ def test_replace_or_clear_after_correction_updates_delta_when_still_off():
     assert active["kcal_delta"] == 150.0
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_compensation.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'app.compensation'`.
 
-- [ ] **Step 3: Implementa `app/compensation.py`**
+- [x] **Step 3: Implementa `app/compensation.py`**
 
 ```python
 from datetime import date
@@ -369,12 +369,12 @@ def apply_pending_compensation(target: dict) -> dict:
 (`MACRO_KEYS` se importa aunque no se use directamente en todas las funciones — puede quitarse
 del import si tu editor se queja de import no usado, no es obligatorio mantenerlo.)
 
-- [ ] **Step 4: Ejecuta el test para verificar que pasa**
+- [x] **Step 4: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_compensation.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/compensation.py tests/test_compensation.py
