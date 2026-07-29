@@ -16,6 +16,7 @@ from app.diet_generator import (
     remaining_budget,
     within_tolerance,
 )
+from app.food_matching import find_matching_food
 from app.macros import compute_real_tdee, mifflin_st_jeor, split_macros
 
 app = FastAPI()
@@ -518,6 +519,94 @@ async def generar_dieta_guardar(request: Request):
 
     save_generated_day(meals)
     return HTMLResponse('<div class="card"><p><span class="badge good">Guardado como comido</span></p></div>')
+
+
+def get_or_create_today_diet_version() -> int:
+    today = date.today().isoformat()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id FROM diet_versions WHERE valid_from = %s AND valid_to = %s",
+                (today, today),
+            )
+            row = cur.fetchone()
+            if row is not None:
+                return row[0]
+            cur.execute(
+                "INSERT INTO diet_versions (source_pdf_filename, valid_from, valid_to) "
+                "VALUES ('manual', %s, %s) RETURNING id",
+                (today, today),
+            )
+            return cur.fetchone()[0]
+
+
+def add_ad_hoc_meal(food_item: str, quantity_grams: float) -> None:
+    diet_version_id = get_or_create_today_diet_version()
+    match = find_matching_food(food_item)
+    matched_food_id = match["id"] if match else None
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO diet_meals
+                    (diet_version_id, day_label, meal_name, food_item, quantity_grams, matched_food_id)
+                VALUES (%s, 'dia', 'extra', %s, %s, %s)
+                """,
+                (diet_version_id, food_item, quantity_grams, matched_food_id),
+            )
+
+
+def get_today_totals() -> dict:
+    today = date.today().isoformat()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    COALESCE(SUM(dm.quantity_grams / 100.0 * f.kcal_100g), 0),
+                    COALESCE(SUM(dm.quantity_grams / 100.0 * f.protein_100g), 0),
+                    COALESCE(SUM(dm.quantity_grams / 100.0 * f.carbs_100g), 0),
+                    COALESCE(SUM(dm.quantity_grams / 100.0 * f.fat_100g), 0)
+                FROM diet_versions dv
+                LEFT JOIN diet_meals dm ON dm.diet_version_id = dv.id
+                LEFT JOIN foods f ON f.id = dm.matched_food_id
+                WHERE dv.valid_from = %s AND dv.valid_to = %s
+                GROUP BY dv.id
+                """,
+                (today, today),
+            )
+            row = cur.fetchone()
+    if row is None:
+        return {"kcal": 0.0, "protein_g": 0.0, "carbs_g": 0.0, "fat_g": 0.0}
+    return {
+        "kcal": float(row[0]),
+        "protein_g": float(row[1]),
+        "carbs_g": float(row[2]),
+        "fat_g": float(row[3]),
+    }
+
+
+@app.get("/registrar-comida")
+def registrar_comida_form(request: Request):
+    template = templates.get_template("registrar_comida.html")
+    return HTMLResponse(
+        template.render({"request": request, "today_totals": get_today_totals()})
+    )
+
+
+@app.post("/registrar-comida")
+def registrar_comida_save(
+    request: Request,
+    food_item: str = Form(...),
+    quantity_grams: float = Form(...),
+):
+    add_ad_hoc_meal(food_item, quantity_grams)
+    template = templates.get_template("registrar_comida.html")
+    return HTMLResponse(
+        template.render(
+            {"request": request, "today_totals": get_today_totals(), "saved": True}
+        )
+    )
 
 
 @app.get("/")

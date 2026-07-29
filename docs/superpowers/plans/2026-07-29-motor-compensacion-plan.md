@@ -397,7 +397,7 @@ git commit -m "Add multi-day macro compensation engine (pure logic + Postgres pe
   `app.main.add_ad_hoc_meal(food_item, quantity_grams) -> None`,
   `app.main.get_today_totals() -> dict`, rutas `GET`/`POST /registrar-comida`.
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 `tests/test_registrar_comida.py`:
 ```python
@@ -478,12 +478,12 @@ def test_post_registrar_comida_twice_reuses_same_diet_version():
             assert cur.fetchone()[0] == 2
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_registrar_comida.py -v`
 Expected: FAIL con `404 Not Found`.
 
-- [ ] **Step 3: Añade a `app/main.py`**
+- [x] **Step 3: Añade a `app/main.py`**
 
 ```python
 from datetime import date
@@ -579,7 +579,7 @@ def registrar_comida_save(
     )
 ```
 
-- [ ] **Step 4: Crea `app/templates/registrar_comida.html`**
+- [x] **Step 4: Crea `app/templates/registrar_comida.html`**
 
 ```html
 {% extends "base.html" %}
@@ -613,18 +613,18 @@ def registrar_comida_save(
 {% endblock %}
 ```
 
-- [ ] **Step 5: Añade el enlace al `<nav>` de `app/templates/base.html`**
+- [x] **Step 5: Añade el enlace al `<nav>` de `app/templates/base.html`**
 
 ```html
 <a href="/registrar-comida" {% if request.url.path == '/registrar-comida' %}class="active"{% endif %}>Registrar comida</a>
 ```
 
-- [ ] **Step 6: Ejecuta el test para verificar que pasa**
+- [x] **Step 6: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_registrar_comida.py -v`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/main.py app/templates/registrar_comida.html app/templates/base.html tests/test_registrar_comida.py
