@@ -11,6 +11,7 @@ from app.compensation import (
     apply_pending_compensation,
     close_day_and_check_compensation,
     get_active_compensation,
+    replace_or_clear_after_correction,
 )
 from app.db import get_connection
 from app.diet_generator import (
@@ -697,6 +698,89 @@ def antojo_fit(
                 "target": macro_target,
             }
         )
+    )
+
+
+def get_most_recent_diet_version_meals() -> list[dict] | None:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id FROM diet_versions ORDER BY valid_from DESC, id DESC LIMIT 1"
+            )
+            row = cur.fetchone()
+            if row is None:
+                return None
+            diet_version_id = row[0]
+            cur.execute(
+                "SELECT id, meal_name, food_item, quantity_grams FROM diet_meals "
+                "WHERE diet_version_id = %s ORDER BY id",
+                (diet_version_id,),
+            )
+            rows = cur.fetchall()
+    return [
+        {"id": r[0], "meal_name": r[1], "food_item": r[2], "quantity_grams": float(r[3])}
+        for r in rows
+    ]
+
+
+def get_diet_version_totals(diet_version_id: int) -> dict:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    COALESCE(SUM(dm.quantity_grams / 100.0 * f.kcal_100g), 0),
+                    COALESCE(SUM(dm.quantity_grams / 100.0 * f.protein_100g), 0),
+                    COALESCE(SUM(dm.quantity_grams / 100.0 * f.carbs_100g), 0),
+                    COALESCE(SUM(dm.quantity_grams / 100.0 * f.fat_100g), 0)
+                FROM diet_meals dm
+                LEFT JOIN foods f ON f.id = dm.matched_food_id
+                WHERE dm.diet_version_id = %s
+                """,
+                (diet_version_id,),
+            )
+            row = cur.fetchone()
+    return {
+        "kcal": float(row[0]), "protein_g": float(row[1]),
+        "carbs_g": float(row[2]), "fat_g": float(row[3]),
+    }
+
+
+@app.get("/corregir")
+def corregir_form(request: Request):
+    template = templates.get_template("corregir.html")
+    return HTMLResponse(
+        template.render({"request": request, "meals": get_most_recent_diet_version_meals()})
+    )
+
+
+@app.post("/corregir/{meal_id}")
+def corregir_meal(
+    request: Request,
+    meal_id: int,
+    food_item: str = Form(...),
+    quantity_grams: float = Form(...),
+):
+    match = find_matching_food(food_item)
+    matched_food_id = match["id"] if match else None
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE diet_meals SET food_item = %s, quantity_grams = %s, matched_food_id = %s "
+                "WHERE id = %s RETURNING diet_version_id",
+                (food_item, quantity_grams, matched_food_id, meal_id),
+            )
+            diet_version_id = cur.fetchone()[0]
+
+    profile = get_user_profile()
+    if profile is not None:
+        target = compute_formula_macro_target(profile)
+        real_totals = get_diet_version_totals(diet_version_id)
+        replace_or_clear_after_correction(real_totals, target)
+
+    template = templates.get_template("corregir.html")
+    return HTMLResponse(
+        template.render({"request": request, "meals": get_most_recent_diet_version_meals()})
     )
 
 

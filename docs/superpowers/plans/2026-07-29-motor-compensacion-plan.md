@@ -1268,7 +1268,7 @@ git commit -m "Add craving-fitting that regenerates the rest of the day around a
   (`ORDER BY valid_from DESC LIMIT 1`), no sobre un histórico completo navegable (fuera de
   alcance de esta primera versión).
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 `tests/test_corregir_page.py`:
 ```python
@@ -1328,12 +1328,12 @@ def test_post_corregir_updates_meal():
     assert float(row[1]) == 180.0
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_corregir_page.py -v`
 Expected: FAIL con `404 Not Found`.
 
-- [ ] **Step 3: Añade a `app/main.py`**
+- [x] **Step 3: Añade a `app/main.py`**
 
 ```python
 from app.compensation import replace_or_clear_after_correction
@@ -1417,7 +1417,7 @@ def corregir_meal(meal_id: int, food_item: str = Form(...), quantity_grams: floa
     )
 ```
 
-- [ ] **Step 4: Crea `app/templates/corregir.html`**
+- [x] **Step 4: Crea `app/templates/corregir.html`**
 
 ```html
 {% extends "base.html" %}
@@ -1448,30 +1448,30 @@ def corregir_meal(meal_id: int, food_item: str = Form(...), quantity_grams: floa
 {% endblock %}
 ```
 
-- [ ] **Step 5: Añade el enlace al `<nav>` de `app/templates/base.html`**
+- [x] **Step 5: Añade el enlace al `<nav>` de `app/templates/base.html`**
 
 ```html
 <a href="/corregir" {% if request.url.path == '/corregir' %}class="active"{% endif %}>Corregir</a>
 ```
 
-- [ ] **Step 6: Ejecuta el test para verificar que pasa**
+- [x] **Step 6: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_corregir_page.py -v`
 Expected: PASS
 
-- [ ] **Step 7: Ejecuta toda la suite del subsistema completo para verificar que no hay regresiones**
+- [x] **Step 7: Ejecuta toda la suite del subsistema completo para verificar que no hay regresiones**
 
 Run: `python -m pytest tests/ -v`
 Expected: todos los tests pasan (Subsistemas 1-4 completos).
 
-- [ ] **Step 8: Verifica visualmente en el navegador**
+- [x] **Step 8: Verifica visualmente en el navegador**
 
 Run: `docker compose up -d --build`
 Abre `http://localhost:8000/corregir`, corrige una comida de un día reciente, y confirma en
 `http://localhost:8000/macros` que si el desvío queda fuera de margen aparece el aviso de
 compensación activa. No hace falta ninguna llamada real al Agent SDK para esta verificación.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add app/main.py app/templates/corregir.html app/templates/base.html tests/test_corregir_page.py

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Corregir{% endblock %}
+{% block content %}
+<h1>Corregir el dia mas reciente</h1>
+{% if not meals %}
+<div class="card"><p>No hay ningun dia guardado todavia.</p></div>
+{% else %}
+<div class="card-grid">
+  {% for meal in meals %}
+  <div class="card">
+    <h3>{{ meal.meal_name | capitalize }}</h3>
+    <hr class="hr-thin">
+    <form method="post" action="/corregir/{{ meal.id }}">
+      <label>Alimento
+        <input type="text" name="food_item" value="{{ meal.food_item }}" required>
+      </label>
+      <label>Cantidad (g)
+        <input type="number" step="0.1" name="quantity_grams" value="{{ meal.quantity_grams }}" required>
+      </label>
+      <button type="submit">Corregir</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

@@ -165,6 +165,7 @@
     <a href="/generar-dieta" {% if request.url.path == '/generar-dieta' %}class="active"{% endif %}>Generar dieta</a>
     <a href="/registrar-comida" {% if request.url.path == '/registrar-comida' %}class="active"{% endif %}>Registrar comida</a>
     <a href="/antojo" {% if request.url.path == '/antojo' %}class="active"{% endif %}>Antojo</a>
+    <a href="/corregir" {% if request.url.path == '/corregir' %}class="active"{% endif %}>Corregir</a>
   </nav>
   <main class="page">
     {% block content %}{% endblock %}
