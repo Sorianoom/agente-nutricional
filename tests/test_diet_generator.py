@@ -141,6 +141,34 @@ def test_generate_day_includes_hints_in_prompt(monkeypatch):
 MEAL_BUDGET = {"kcal": 300.0, "protein_g": 30.0, "carbs_g": 0.0, "fat_g": 19.5}
 
 
+def test_generate_day_accepts_meal_names_subset(monkeypatch):
+    partial_proposal = {
+        "comida": {"food_item": "pechuga de pollo", "quantity_grams": 200},
+        "cena": {"food_item": "salmon", "quantity_grams": 150},
+        "merienda": {"food_item": "yogur proteico", "quantity_grams": 125},
+    }
+    captured_schemas = []
+
+    async def fake_query(prompt, options):
+        captured_schemas.append(options.output_format["schema"])
+        yield _fake_result(partial_proposal)
+
+    monkeypatch.setattr("app.diet_generator.query", fake_query)
+    monkeypatch.setattr(
+        "app.diet_generator.find_matching_food",
+        lambda name: FAKE_MATCHES.get(name),
+    )
+
+    result = generate_day(
+        {"kcal": 700.0, "protein_g": 60.0, "carbs_g": 60.0, "fat_g": 25.0},
+        "maintenance",
+        {},
+        meal_names=("comida", "merienda", "cena"),
+    )
+    assert {m["meal_name"] for m in result["meals"]} == {"comida", "merienda", "cena"}
+    assert "desayuno" not in captured_schemas[0]["properties"]
+
+
 def test_generate_single_meal_returns_resolved_meal(monkeypatch):
     async def fake_query(prompt, options):
         yield _fake_result({"food_item": "salmon", "quantity_grams": 150})

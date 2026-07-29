@@ -882,7 +882,7 @@ siempre fija **una** comida y regenera **las otras tres** desde cero — no comb
 ediciones individuales previas de comidas concretas. Es una simplificación razonable para esta
 primera versión: para eso ya existe `/generar-dieta` con su regeneración comida a comida.
 
-- [ ] **Step 1: Escribe el test que falla (`generate_day` con subconjunto de comidas)**
+- [x] **Step 1: Escribe el test que falla (`generate_day` con subconjunto de comidas)**
 
 Añade a `tests/test_diet_generator.py`:
 ```python
@@ -914,12 +914,12 @@ def test_generate_day_accepts_meal_names_subset(monkeypatch):
     assert "desayuno" not in captured_schemas[0]["properties"]
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_diet_generator.py -v`
 Expected: FAIL con `TypeError: generate_day() got an unexpected keyword argument 'meal_names'`.
 
-- [ ] **Step 3: Modifica `app/diet_generator.py`**
+- [x] **Step 3: Modifica `app/diet_generator.py`**
 
 Sustituye el `DAY_SCHEMA` fijo por una función que lo construye para el subconjunto de comidas
 pedido, y añade el parámetro `meal_names` a `_call_agent_for_day` y `generate_day`:
@@ -999,13 +999,13 @@ def generate_day(target: dict, goal: str, hints: dict, meal_names: tuple = MEAL_
 estas — el `try/finally: await messages.aclose()` de la Tarea 5 del Subsistema 3 se mantiene
 tal cual, solo se añade el parámetro `meal_names`.)
 
-- [ ] **Step 4: Ejecuta el test para verificar que pasa**
+- [x] **Step 4: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_diet_generator.py -v`
 Expected: PASS (incluye también los tests ya existentes de `generate_day`, que siguen usando el
 valor por defecto `MEAL_NAMES` — confirma que ninguno se rompió).
 
-- [ ] **Step 5: Escribe el test que falla para la página de antojo**
+- [x] **Step 5: Escribe el test que falla para la página de antojo**
 
 `tests/test_antojo_page.py`:
 ```python
@@ -1073,12 +1073,12 @@ def test_post_antojo_fits_craving_and_generates_rest(monkeypatch):
     assert "Salmon" in response.text
 ```
 
-- [ ] **Step 6: Ejecuta el test para verificar que falla**
+- [x] **Step 6: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_antojo_page.py -v`
 Expected: FAIL con `404 Not Found`.
 
-- [ ] **Step 7: Añade a `app/main.py`**
+- [x] **Step 7: Añade a `app/main.py`**
 
 ```python
 @app.get("/antojo")
@@ -1156,7 +1156,7 @@ tienen guion bajo — son "privadas" del módulo, pero Python no lo impide; si p
 importar nombres con guion bajo entre módulos, expón wrappers públicos en `app/diet_generator.py`
 en su lugar, ej. `resolve_meal = _resolve_meal`.)
 
-- [ ] **Step 8: Crea `app/templates/antojo.html`**
+- [x] **Step 8: Crea `app/templates/antojo.html`**
 
 ```html
 {% extends "base.html" %}
@@ -1219,29 +1219,34 @@ en su lugar, ej. `resolve_meal = _resolve_meal`.)
 {% endblock %}
 ```
 
-- [ ] **Step 9: Añade el enlace al `<nav>` de `app/templates/base.html`**
+- [x] **Step 9: Añade el enlace al `<nav>` de `app/templates/base.html`**
 
 ```html
 <a href="/antojo" {% if request.url.path == '/antojo' %}class="active"{% endif %}>Antojo</a>
 ```
 
-- [ ] **Step 10: Ejecuta el test para verificar que pasa**
+- [x] **Step 10: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_antojo_page.py -v`
 Expected: PASS
 
-- [ ] **Step 11: Ejecuta toda la suite para verificar que no hay regresiones**
+- [x] **Step 11: Ejecuta toda la suite para verificar que no hay regresiones**
 
 Run: `python -m pytest tests/ -v`
 Expected: todos los tests pasan.
 
-- [ ] **Step 12: Verifica visualmente en el navegador**
+- [ ] **Step 12: Verifica visualmente en el navegador** — PENDIENTE: el implementador agotó la
+      cuota de la sesión con dos llamadas reales seguidas (una fallida, una que quedó corriendo
+      sin confirmar) antes de completar esta verificación. El código está implementado y
+      cubierto por tests mockeados (61/61 pasan), pero la confirmación real end-to-end de
+      "/antojo" contra la suscripción real queda por hacer — retómalo con una única llamada
+      real cuando haya cuota disponible de nuevo.
 
 Run: `docker compose up -d --build`
 Abre `http://localhost:8000/antojo`, pide un antojo y confirma que el resto del día se genera
 en torno a él. Esto hace una llamada real a la suscripción, hazlo una vez, no en bucle.
 
-- [ ] **Step 13: Commit**
+- [x] **Step 13: Commit**
 
 ```bash
 git add app/diet_generator.py app/main.py app/templates/antojo.html app/templates/base.html tests/test_diet_generator.py tests/test_antojo_page.py

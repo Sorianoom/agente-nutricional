@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Antojo{% endblock %}
+{% block content %}
+<h1>Antojo</h1>
+{% if not profile %}
+<div class="card"><p>Falta completar el <a href="/perfil">perfil</a>.</p></div>
+{% else %}
+<div class="card">
+  <form method="post" action="/antojo">
+    <label>Fuente de macros objetivo
+      <select name="method" required>
+        <option value="formula">Metodo determinista</option>
+        <option value="agent">Ultimo resultado de IA guardado</option>
+      </select>
+    </label>
+    <label>Comida a la que corresponde el antojo
+      <select name="craving_meal_name" required>
+        {% for name in meal_names %}
+        <option value="{{ name }}">{{ name | capitalize }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Que te apetece
+      <input type="text" name="craving_food_item" required placeholder="ej. Chocolate negro">
+    </label>
+    <label>Cantidad (g)
+      <input type="number" step="0.1" name="craving_quantity_grams" required>
+    </label>
+    <button type="submit">Encajarlo en el dia</button>
+  </form>
+</div>
+
+{% if no_target_available %}
+<div class="card"><p>No hay ningun objetivo de macros disponible. Ve a <a href="/macros">Macros</a>.</p></div>
+{% endif %}
+
+{% if result %}
+<div class="card-grid">
+  {% for meal in result.meals %}
+  <div class="card">
+    <h3>{{ meal.meal_name | capitalize }}</h3>
+    <hr class="hr-thin">
+    <p>{{ meal.food_item }} — {{ meal.quantity_grams }} g</p>
+    <div class="macro-row"><span class="label">Kcal</span><span class="value">{{ "%.0f" | format(meal.kcal) }}</span></div>
+    <div class="macro-row"><span class="label">Proteina</span><span class="value">{{ "%.1f" | format(meal.protein_g) }} g</span></div>
+  </div>
+  {% endfor %}
+</div>
+<div class="card">
+  {% if result.within_tolerance %}
+  <p><span class="badge good">Dentro de margen (±5%)</span></p>
+  {% else %}
+  <p><span class="badge bad">Fuera de margen</span></p>
+  {% endif %}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

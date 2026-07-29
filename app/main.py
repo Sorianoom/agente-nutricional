@@ -16,6 +16,7 @@ from app.db import get_connection
 from app.diet_generator import (
     MEAL_NAMES,
     _day_totals,
+    _resolve_meal,
     generate_day,
     generate_single_meal,
     remaining_budget,
@@ -629,6 +630,74 @@ def cerrar_dia(request: Request):
     real_totals = get_today_totals()
     close_day_and_check_compensation(real_totals, target)
     return HTMLResponse('<div class="card"><p><span class="badge good">Dia cerrado</span></p></div>')
+
+
+@app.get("/antojo")
+def antojo_form(request: Request):
+    profile = get_user_profile()
+    template = templates.get_template("antojo.html")
+    return HTMLResponse(
+        template.render({"request": request, "profile": profile, "meal_names": MEAL_NAMES, "result": None})
+    )
+
+
+@app.post("/antojo")
+def antojo_fit(
+    request: Request,
+    method: str = Form(...),
+    craving_meal_name: str = Form(...),
+    craving_food_item: str = Form(...),
+    craving_quantity_grams: float = Form(...),
+):
+    profile = get_user_profile()
+    template = templates.get_template("antojo.html")
+    if profile is None:
+        return HTMLResponse(
+            template.render({"request": request, "profile": None, "meal_names": MEAL_NAMES, "result": None})
+        )
+
+    target = _current_macro_target(method, profile)
+    if target is None:
+        return HTMLResponse(
+            template.render(
+                {
+                    "request": request,
+                    "profile": profile,
+                    "meal_names": MEAL_NAMES,
+                    "result": None,
+                    "no_target_available": True,
+                }
+            )
+        )
+    macro_target, goal = target
+
+    craving_meal = _resolve_meal(craving_meal_name, {"food_item": craving_food_item, "quantity_grams": craving_quantity_grams})
+    budget = remaining_budget(macro_target, [craving_meal])
+
+    remaining_names = tuple(name for name in MEAL_NAMES if name != craving_meal_name)
+    rest_of_day = generate_day(budget, goal, {}, meal_names=remaining_names)
+
+    all_meals = sorted(
+        [craving_meal] + rest_of_day["meals"], key=lambda m: MEAL_NAMES.index(m["meal_name"])
+    )
+    totals = _day_totals(all_meals)
+    result = {
+        "meals": all_meals,
+        "totals": totals,
+        "within_tolerance": within_tolerance(totals, macro_target),
+    }
+
+    return HTMLResponse(
+        template.render(
+            {
+                "request": request,
+                "profile": profile,
+                "meal_names": MEAL_NAMES,
+                "result": result,
+                "target": macro_target,
+            }
+        )
+    )
 
 
 @app.get("/")

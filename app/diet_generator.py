@@ -29,12 +29,13 @@ MEAL_PROPOSAL_SCHEMA = {
     "additionalProperties": False,
 }
 
-DAY_SCHEMA = {
-    "type": "object",
-    "properties": {name: MEAL_PROPOSAL_SCHEMA for name in MEAL_NAMES},
-    "required": list(MEAL_NAMES),
-    "additionalProperties": False,
-}
+def _build_day_schema(meal_names: tuple) -> dict:
+    return {
+        "type": "object",
+        "properties": {name: MEAL_PROPOSAL_SCHEMA for name in meal_names},
+        "required": list(meal_names),
+        "additionalProperties": False,
+    }
 
 
 def within_tolerance(real: dict, target: dict, pct: float = 0.05) -> bool:
@@ -89,7 +90,9 @@ def _day_totals(meals: list) -> dict:
     return {key: sum(meal[key] for meal in meals) for key in MACRO_KEYS}
 
 
-def _call_agent_for_day(target: dict, goal: str, hints: dict, previous_attempt_note: str) -> dict:
+def _call_agent_for_day(
+    target: dict, goal: str, hints: dict, previous_attempt_note: str, meal_names: tuple = MEAL_NAMES
+) -> dict:
     AGENT_CWD.mkdir(parents=True, exist_ok=True)
     options = ClaudeAgentOptions(
         system_prompt=(
@@ -102,18 +105,18 @@ def _call_agent_for_day(target: dict, goal: str, hints: dict, previous_attempt_n
         cwd=str(AGENT_CWD),
         setting_sources=[],
         allowed_tools=[],
-        output_format={"type": "json_schema", "schema": DAY_SCHEMA},
+        output_format={"type": "json_schema", "schema": _build_day_schema(meal_names)},
     )
     hints_lines = [f"- {meal}: {hint}" for meal, hint in hints.items() if hint]
     hints_text = ("Directrices por comida (orientacion suave, no exacta):\n" + "\n".join(hints_lines) + "\n") if hints_lines else ""
     prompt = (
-        f"Objetivo del dia: {json.dumps(target, ensure_ascii=False)}\n"
+        f"Objetivo para estas comidas: {json.dumps(target, ensure_ascii=False)}\n"
         f"Objetivo del usuario: {goal}\n"
         f"Alimentos a evitar: {', '.join(EXCLUDED_FOODS)}\n"
         f"{hints_text}"
         f"{previous_attempt_note}"
-        "Propon desayuno, comida, merienda y cena con food_item (nombre de "
-        "producto de supermercado espanol) y quantity_grams."
+        f"Propon {', '.join(meal_names)} con food_item (nombre de producto de "
+        "supermercado espanol) y quantity_grams."
     )
 
     async def _run() -> dict:
@@ -145,13 +148,13 @@ def _call_agent_for_day(target: dict, goal: str, hints: dict, previous_attempt_n
     return anyio.run(_run)
 
 
-def generate_day(target: dict, goal: str, hints: dict) -> dict:
+def generate_day(target: dict, goal: str, hints: dict, meal_names: tuple = MEAL_NAMES) -> dict:
     note = ""
     meals: list = []
     totals: dict = {}
     for attempt in range(1, MAX_ATTEMPTS + 1):
-        proposal = _call_agent_for_day(target, goal, hints, note)
-        meals = [_resolve_meal(name, proposal[name]) for name in MEAL_NAMES]
+        proposal = _call_agent_for_day(target, goal, hints, note, meal_names)
+        meals = [_resolve_meal(name, proposal[name]) for name in meal_names]
         totals = _day_totals(meals)
         if within_tolerance(totals, target):
             return {"meals": meals, "totals": totals, "within_tolerance": True, "attempts": attempt}
