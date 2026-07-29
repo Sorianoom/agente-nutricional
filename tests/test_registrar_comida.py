@@ -2,6 +2,7 @@ from datetime import date
 
 from fastapi.testclient import TestClient
 
+from app.compensation import get_active_compensation
 from app.db import get_connection
 from app.main import app
 
@@ -21,6 +22,12 @@ def _clear_today_diet_version():
                 "DELETE FROM diet_versions WHERE valid_from = %s AND valid_to = %s",
                 (today, today),
             )
+
+
+def _clear_compensation():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM pending_compensation")
 
 
 def test_get_registrar_comida_shows_form():
@@ -73,3 +80,23 @@ def test_post_registrar_comida_twice_reuses_same_diet_version():
                 (today, today),
             )
             assert cur.fetchone()[0] == 2
+
+
+def test_cerrar_dia_creates_compensation_when_out_of_tolerance(monkeypatch):
+    _clear_today_diet_version()
+    _clear_compensation()
+    add_meal_response = client.post(
+        "/registrar-comida",
+        data={"food_item": "Pechuga de pollo", "quantity_grams": "2000"},
+    )
+    assert add_meal_response.status_code == 200
+
+    monkeypatch.setattr(
+        "app.main.compute_formula_macro_target",
+        lambda profile: {"kcal": 2000.0, "protein_g": 150.0, "carbs_g": 200.0, "fat_g": 60.0, "method_label": "real"},
+    )
+    monkeypatch.setattr("app.main.get_user_profile", lambda: {"current_goal": "maintenance"})
+
+    response = client.post("/cerrar-dia")
+    assert response.status_code == 200
+    assert get_active_compensation() is not None

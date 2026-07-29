@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.compensation import get_active_compensation
 from app.db import get_connection
 from app.main import app
 
@@ -173,6 +174,48 @@ def test_guardar_dia_creates_diet_version_when_within_tolerance():
             )
             count = cur.fetchone()[0]
     assert count == 4
+
+
+def test_guardar_dia_within_tolerance_does_not_create_compensation():
+    # `generar_dieta_guardar` solo guarda si `within_tolerance(totals, target)` es
+    # cierto (ver `test_guardar_dia_rejects_out_of_tolerance_data`), y ahora llama
+    # a `close_day_and_check_compensation(totals, target)` con esos mismos valores
+    # justo despues de guardar (Tarea 4 del Subsistema 4). Como el guard previo ya
+    # garantiza que esos totals estan dentro de margen, esa llamada es un no-op:
+    # no debe crearse ninguna compensacion pendiente por guardar un dia valido.
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM pending_compensation")
+            cur.execute(
+                "DELETE FROM diet_meals WHERE diet_version_id IN "
+                "(SELECT id FROM diet_versions WHERE source_pdf_filename = 'generado')"
+            )
+            cur.execute("DELETE FROM diet_versions WHERE source_pdf_filename = 'generado'")
+
+    food_ids = _seed_test_foods_for_guardar()
+
+    response = client.post(
+        "/generar-dieta/guardar",
+        data={
+            "target_kcal": "982.5", "target_protein_g": "101.5",
+            "target_carbs_g": "70", "target_fat_g": "33",
+            "goal": "maintenance",
+            "meal_desayuno_food_item": "Avena integral", "meal_desayuno_quantity_grams": "100",
+            "meal_desayuno_matched_food_id": str(food_ids["desayuno"]), "meal_desayuno_kcal": "350",
+            "meal_desayuno_protein_g": "13", "meal_desayuno_carbs_g": "60", "meal_desayuno_fat_g": "7",
+            "meal_comida_food_item": "Pechuga de pollo", "meal_comida_quantity_grams": "200",
+            "meal_comida_matched_food_id": str(food_ids["comida"]), "meal_comida_kcal": "220",
+            "meal_comida_protein_g": "46", "meal_comida_carbs_g": "0", "meal_comida_fat_g": "4",
+            "meal_merienda_food_item": "Yogur proteico", "meal_merienda_quantity_grams": "125",
+            "meal_merienda_matched_food_id": str(food_ids["merienda"]), "meal_merienda_kcal": "112.5",
+            "meal_merienda_protein_g": "12.5", "meal_merienda_carbs_g": "10", "meal_merienda_fat_g": "2.5",
+            "meal_cena_food_item": "Salmon", "meal_cena_quantity_grams": "150",
+            "meal_cena_matched_food_id": str(food_ids["cena"]), "meal_cena_kcal": "300",
+            "meal_cena_protein_g": "30", "meal_cena_carbs_g": "0", "meal_cena_fat_g": "19.5",
+        },
+    )
+    assert response.status_code == 200
+    assert get_active_compensation() is None
 
 
 def test_guardar_dia_rejects_out_of_tolerance_data():

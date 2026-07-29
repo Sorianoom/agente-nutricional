@@ -26,4 +26,13 @@
   <div class="macro-row"><span class="label">Carbohidratos</span><span class="value">{{ "%.1f" | format(today_totals.carbs_g) }} g</span></div>
   <div class="macro-row"><span class="label">Grasa</span><span class="value">{{ "%.1f" | format(today_totals.fat_g) }} g</span></div>
 </div>
+
+<div class="card">
+  <button
+    hx-post="/cerrar-dia"
+    hx-target="this"
+    hx-swap="innerHTML">
+    Cerrar el dia de hoy
+  </button>
+</div>
 {% endblock %}

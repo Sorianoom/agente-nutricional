@@ -645,7 +645,7 @@ git commit -m "Add ad-hoc off-plan meal logging"
 - Produces: ruta `POST /cerrar-dia`.
 - Consumes: `app.compensation.close_day_and_check_compensation`.
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 Añade a `tests/test_registrar_comida.py`:
 ```python
@@ -681,12 +681,12 @@ def test_cerrar_dia_creates_compensation_when_out_of_tolerance(monkeypatch):
 (Importa `add_ad_hoc_meal` desde `app.main` si hace falta para el resto de tests de este
 archivo, y añade `from app.main import add_ad_hoc_meal, ...` según corresponda.)
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_registrar_comida.py -v`
 Expected: FAIL con `404 Not Found`.
 
-- [ ] **Step 3: Añade a `app/main.py`**
+- [x] **Step 3: Añade a `app/main.py`**
 
 ```python
 from app.compensation import close_day_and_check_compensation
@@ -703,7 +703,7 @@ def cerrar_dia(request: Request):
     return HTMLResponse('<div class="card"><p><span class="badge good">Dia cerrado</span></p></div>')
 ```
 
-- [ ] **Step 4: Modifica `generar_dieta_guardar` para disparar también el chequeo de compensación**
+- [x] **Step 4: Modifica `generar_dieta_guardar` para disparar también el chequeo de compensación**
 
 En la ruta `POST /generar-dieta/guardar` (ya existente del Subsistema 3), justo después de
 `save_generated_day(meals)` y antes del `return`, añade:
@@ -715,7 +715,7 @@ En la ruta `POST /generar-dieta/guardar` (ya existente del Subsistema 3), justo 
 (`totals` y `target` ya están calculados en esa misma función para el chequeo de
 `within_tolerance` previo — reutilízalos, no los recalcules.)
 
-- [ ] **Step 5: Añade el botón al final de `app/templates/registrar_comida.html`**
+- [x] **Step 5: Añade el botón al final de `app/templates/registrar_comida.html`**
 
 ```html
 <div class="card">
@@ -728,12 +728,12 @@ En la ruta `POST /generar-dieta/guardar` (ya existente del Subsistema 3), justo 
 </div>
 ```
 
-- [ ] **Step 6: Ejecuta los tests para verificar que pasan**
+- [x] **Step 6: Ejecuta los tests para verificar que pasan**
 
 Run: `python -m pytest tests/test_registrar_comida.py tests/test_generar_dieta_page.py -v`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/main.py app/templates/registrar_comida.html tests/test_registrar_comida.py

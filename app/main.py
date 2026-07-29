@@ -7,6 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.agent_macros import compute_agent_macro_target
+from app.compensation import close_day_and_check_compensation
 from app.db import get_connection
 from app.diet_generator import (
     MEAL_NAMES,
@@ -518,6 +519,7 @@ async def generar_dieta_guardar(request: Request):
         raise HTTPException(status_code=400, detail="El dia esta fuera de margen, no se puede guardar")
 
     save_generated_day(meals)
+    close_day_and_check_compensation(totals, target)
     return HTMLResponse('<div class="card"><p><span class="badge good">Guardado como comido</span></p></div>')
 
 
@@ -607,6 +609,17 @@ def registrar_comida_save(
             {"request": request, "today_totals": get_today_totals(), "saved": True}
         )
     )
+
+
+@app.post("/cerrar-dia")
+def cerrar_dia(request: Request):
+    profile = get_user_profile()
+    if profile is None:
+        raise HTTPException(status_code=400, detail="Falta completar el perfil")
+    target = compute_formula_macro_target(profile)
+    real_totals = get_today_totals()
+    close_day_and_check_compensation(real_totals, target)
+    return HTMLResponse('<div class="card"><p><span class="badge good">Dia cerrado</span></p></div>')
 
 
 @app.get("/")
