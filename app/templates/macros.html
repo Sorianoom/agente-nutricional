@@ -2,6 +2,13 @@
 {% block title %}Macros objetivo{% endblock %}
 {% block content %}
 <h1>Macros objetivo</h1>
+{% if compensation %}
+<div class="card">
+  <p><span class="badge bad">Compensacion activa</span> ajustando
+  {{ "%.0f" | format(compensation.kcal_delta / compensation.days_total) }} kcal/dia durante
+  {{ compensation.days_total - compensation.days_elapsed }} dia(s) mas.</p>
+</div>
+{% endif %}
 {% if not profile %}
 <div class="card">
   <p>Falta completar el <a href="/perfil">perfil</a> antes de calcular macros.</p>

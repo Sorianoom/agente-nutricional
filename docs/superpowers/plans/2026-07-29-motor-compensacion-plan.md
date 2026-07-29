@@ -752,7 +752,7 @@ git commit -m "Add explicit day-closing action and trigger compensation from Tas
 **Interfaces:**
 - Consumes: `app.compensation.apply_pending_compensation`, `app.compensation.get_active_compensation`.
 
-- [ ] **Step 1: Escribe el test que falla**
+- [x] **Step 1: Escribe el test que falla**
 
 Añade a `tests/test_macros_page.py`:
 ```python
@@ -778,12 +778,12 @@ def test_macros_page_shows_compensation_adjusted_target(monkeypatch):
     assert "1900" in response.text
 ```
 
-- [ ] **Step 2: Ejecuta el test para verificar que falla**
+- [x] **Step 2: Ejecuta el test para verificar que falla**
 
 Run: `python -m pytest tests/test_macros_page.py -v`
 Expected: FAIL (el target mostrado no refleja el ajuste todavía).
 
-- [ ] **Step 3: Modifica `app/main.py`**
+- [x] **Step 3: Modifica `app/main.py`**
 
 ```python
 from app.compensation import apply_pending_compensation, get_active_compensation
@@ -831,7 +831,7 @@ def macros_page(request: Request):
 (Sustituye la implementación anterior de `_current_macro_target` y `macros_page` completas por
 estas — no dupliques definiciones.)
 
-- [ ] **Step 4: Añade el aviso a `app/templates/macros.html`**
+- [x] **Step 4: Añade el aviso a `app/templates/macros.html`**
 
 Justo después de `<h1>Macros objetivo</h1>`:
 ```html
@@ -844,17 +844,17 @@ Justo después de `<h1>Macros objetivo</h1>`:
 {% endif %}
 ```
 
-- [ ] **Step 5: Ejecuta el test para verificar que pasa**
+- [x] **Step 5: Ejecuta el test para verificar que pasa**
 
 Run: `python -m pytest tests/test_macros_page.py -v`
 Expected: PASS
 
-- [ ] **Step 6: Ejecuta toda la suite para verificar que no hay regresiones**
+- [x] **Step 6: Ejecuta toda la suite para verificar que no hay regresiones**
 
 Run: `python -m pytest tests/ -v`
 Expected: todos los tests pasan.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/main.py app/templates/macros.html tests/test_macros_page.py

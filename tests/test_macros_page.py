@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.compensation import create_or_merge_compensation
 from app.db import get_connection
 from app.main import app
 
@@ -68,3 +69,22 @@ def test_recalcular_ia_saves_and_returns_partial(monkeypatch):
             )
             count = cur.fetchone()[0]
     assert count == 1
+
+
+def test_macros_page_shows_compensation_adjusted_target(monkeypatch):
+    _seed_profile()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM pending_compensation")
+
+    monkeypatch.setattr(
+        "app.main.compute_formula_macro_target",
+        lambda profile: {"kcal": 2000.0, "protein_g": 150.0, "carbs_g": 200.0, "fat_g": 60.0, "method_label": "real"},
+    )
+    create_or_merge_compensation(
+        {"kcal_delta": 300.0, "protein_g_delta": 0.0, "carbs_g_delta": 0.0, "fat_g_delta": 0.0}
+    )
+
+    response = client.get("/macros")
+    assert response.status_code == 200
+    assert "1900" in response.text

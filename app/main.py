@@ -7,7 +7,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.agent_macros import compute_agent_macro_target
-from app.compensation import close_day_and_check_compensation
+from app.compensation import (
+    apply_pending_compensation,
+    close_day_and_check_compensation,
+    get_active_compensation,
+)
 from app.db import get_connection
 from app.diet_generator import (
     MEAL_NAMES,
@@ -277,14 +281,16 @@ def macros_page(request: Request):
         return HTMLResponse(
             template.render({"request": request, "profile": None})
         )
-    formula_result = compute_formula_macro_target(profile)
+    formula_result = apply_pending_compensation(compute_formula_macro_target(profile))
+    agent_result = get_latest_agent_macro_target()
     return HTMLResponse(
         template.render(
             {
                 "request": request,
                 "profile": profile,
                 "formula": formula_result,
-                "agent": get_latest_agent_macro_target(),
+                "agent": apply_pending_compensation(agent_result) if agent_result else None,
+                "compensation": get_active_compensation(),
             }
         )
     )
@@ -342,11 +348,14 @@ def _current_macro_target(method: str, profile: dict) -> tuple[dict, str] | None
             result = compute_formula_macro_target(profile)
         except ValueError:
             return None
-        return result, profile["current_goal"]
-    agent_result = get_latest_agent_macro_target()
-    if agent_result is None:
-        return None
-    return agent_result, agent_result["goal"]
+        goal = profile["current_goal"]
+    else:
+        agent_result = get_latest_agent_macro_target()
+        if agent_result is None:
+            return None
+        result = agent_result
+        goal = agent_result["goal"]
+    return apply_pending_compensation(result), goal
 
 
 @app.get("/generar-dieta")
